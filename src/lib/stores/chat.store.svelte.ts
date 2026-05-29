@@ -1,14 +1,12 @@
 import { type Conversation } from '$lib/services/chat.service';
 import * as chatService from '$lib/services/chat.service';
 
-// Svelte 5 rune-based reactive store
-// All state mutations go through these functions; service never touches UI
-
 function createChatStore() {
 	let conversations = $state<Conversation[]>([]);
 	let activeId = $state<string | null>(null);
 	let isResponding = $state(false);
 	let searchQuery = $state('');
+	let isSidebarOpen = $state(false);
 
 	// Derived: currently active conversation
 	const activeConversation = $derived(
@@ -28,6 +26,8 @@ function createChatStore() {
 		if (savedId && conversations.some((c) => c.id === savedId)) {
 			activeId = savedId;
 		}
+
+		isSidebarOpen = chatService.loadSidebarState();
 	}
 
 	// Persist helpers called after every mutation
@@ -92,6 +92,10 @@ function createChatStore() {
 		searchQuery = q;
 	}
 
+	function saveSidebarState(isOpen: boolean) {
+		chatService.saveSidebarState(isOpen);
+	}
+
 	return {
 		// State (read-only from outside via getters)
 		get conversations() { return conversations; },
@@ -100,6 +104,7 @@ function createChatStore() {
 		get filteredConversations() { return filteredConversations; },
 		get isResponding() { return isResponding; },
 		get searchQuery() { return searchQuery; },
+		get isSidebarOpen() { return isSidebarOpen; },
 
 		// Actions
 		init,
@@ -107,7 +112,8 @@ function createChatStore() {
 		selectConversation,
 		sendMessage,
 		deleteConversation,
-		setSearchQuery
+		setSearchQuery,
+		saveSidebarState,
 	};
 }
 

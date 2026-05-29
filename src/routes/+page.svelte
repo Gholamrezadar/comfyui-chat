@@ -6,21 +6,25 @@
 	import ChatView from '$lib/components/ChatView.svelte';
 
 	let sidebarCollapsed = $state(false);
+	let loaded = $state(false);
 
 	// Bootstrap stores on mount (client-only, localStorage access)
 	onMount(() => {
 		themeStore.init();
 		chatStore.init();
+		sidebarCollapsed = !chatStore.isSidebarOpen;
+		loaded = true;
 	});
 </script>
 
-<div class="flex h-screen w-screen overflow-hidden bg-background text-foreground antialiased">
-	<!-- Sidebar -->
-	<!-- <Sidebar bind:collapsed={sidebarCollapsed} /> -->
-	<Sidebar collapsed={false} />
-
-	<!-- Main area -->
-	<main class="flex flex-1 min-w-0 flex-col overflow-hidden">
-		<ChatView />
-	</main>
-</div>
+{#if loaded}
+	<div class="flex h-screen w-screen overflow-hidden bg-background text-foreground antialiased">
+		<!-- Sidebar -->
+		<Sidebar bind:collapsed={sidebarCollapsed} />
+	
+		<!-- Main area -->
+		<main class="flex flex-1 min-w-0 flex-col overflow-hidden">
+			<ChatView />
+		</main>
+	</div>
+{/if}

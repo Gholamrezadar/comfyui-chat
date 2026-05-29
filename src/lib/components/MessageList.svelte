@@ -31,20 +31,24 @@
 			{#if message.role === 'user'}
 				<!-- User message: bubble aligned right -->
 				<div class="flex items-end justify-end gap-2">
+					<!-- Bubble -->
 					<div class="flex flex-col items-end gap-1">
-						<div class="max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-4 py-2.5 text-primary-foreground">
+						<!-- Content -->
+						<div class="rounded-xl bg-chat-bubble px-4 py-1.5 text-foreground/85">
 							<p class="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
 						</div>
+						<!-- Timestamp -->
 						<span class="text-[10px] text-muted-foreground">{formatTimestamp(message.timestamp)}</span>
 					</div>
-					<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-xs font-bold text-white">
+					<!-- User Profile -->
+					<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-zinc-900 to-zinc-950 text-xs font-bold text-white">
 						U
 					</div>
 				</div>
 			{:else}
-				<!-- Assistant message: no bubble, plain text with avatar -->
+				<!-- Assistant message: no bubble, plain text -->
 				<div class="flex items-start gap-3">
-					<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary mt-0.5">
+					<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary mt-0.5 hidden">
 						<Bot class="h-4 w-4 text-primary-foreground" />
 					</div>
 					<div class="flex flex-col gap-1 min-w-0">

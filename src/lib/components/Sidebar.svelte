@@ -10,12 +10,14 @@
 		Search,
 		Settings,
 		ChevronLeft,
-		ChevronRight,
 		Sun,
 		Moon,
 		Trash2,
 		MessageSquare,
-		Bot
+		Bot,
+
+		PanelLeft
+
 	} from 'lucide-svelte';
 
 	// Props
@@ -51,7 +53,7 @@
 </script>
 
 <aside
-	class="fixed top-0 left-0 z-50 flex h-full flex-col border-r border-border bg-sidebar transition-all duration-0 ease-in-out md:relative md:h-full"
+	class="top-0 left-0 z-50 flex h-full flex-col border-r border-border bg-sidebar transition-all duration-0 ease-in-out md:relative md:h-full"
 	class:w-full={!collapsed}
 	class:w-14={collapsed}
 	class:md:w-64={!collapsed}
@@ -59,12 +61,18 @@
 >
 	<!-- Toggle button -->
 	<button
-		onclick={() => (collapsed = !collapsed)}
-		class="absolute top-3 right-3 z-20 flex h-8 w-8 items-center justify-center rounded-full shadow-sm transition-colors hover:bg-accent cursor-pointer"
+		onclick={() => {
+			collapsed = !collapsed;
+			chatStore.saveSidebarState(!collapsed);
+			}}
+		class="absolute top-3 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-accent"
+		class:right-3={!collapsed}
+		class:left-3={collapsed}
 		aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
 	>
 		{#if collapsed}
-			<ChevronRight class="h-4 w-4" />
+			<!-- <ChevronRight class="h-4 w-4" /> -->
+			<PanelLeft class="h-4 w-4" />
 		{:else}
 			<ChevronLeft class="h-4 w-4" />
 		{/if}
@@ -80,9 +88,7 @@
 				<span class="truncate text-sm font-semibold text-foreground">LLM Chat</span>
 			</div>
 		{:else}
-			<div
-				class="invisible flex h-7 w-7 items-center justify-center rounded-lg bg-primary"
-			>
+			<div class="invisible flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
 				<Bot class="h-4 w-4 text-primary-foreground" />
 			</div>
 		{/if}
@@ -98,8 +104,8 @@
 						variant="ghost"
 						size="icon"
 						onclick={() => chatStore.newConversation()}
-						class="h-9 w-9"
-						aria-label="New chat"
+						class="h-9 w-9 cursor-pointer"
+						// aria-label="New chat"
 					>
 						<MessageSquarePlus class="h-4 w-4" />
 					</Button>
@@ -116,7 +122,7 @@
 							collapsed = false;
 							showSearch = true;
 						}}
-						class="h-9 w-9"
+						class="h-9 w-9 cursor-pointer"
 						aria-label="Search"
 					>
 						<Search class="h-4 w-4" />
@@ -127,7 +133,7 @@
 
 			<Tooltip>
 				<TooltipTrigger>
-					<Button variant="ghost" size="icon" class="h-9 w-9" aria-label="Settings">
+					<Button variant="ghost" size="icon" class="h-9 w-9 cursor-pointer" aria-label="Settings">
 						<Settings class="h-4 w-4" />
 					</Button>
 				</TooltipTrigger>
@@ -137,7 +143,7 @@
 			<!-- Full mode -->
 			<Button
 				variant="default"
-				class="h-9 w-full justify-start gap-2 text-sm"
+				class="h-9 w-full justify-start gap-2 text-sm cursor-pointer"
 				onclick={() => chatStore.newConversation()}
 			>
 				<MessageSquarePlus class="h-4 w-4 shrink-0" />
@@ -148,13 +154,13 @@
 				<Button
 					variant="ghost"
 					size="sm"
-					class="flex-1 justify-start gap-2 text-sm"
+					class="flex-1 justify-start gap-2 text-sm cursor-pointer"
 					onclick={() => (showSearch = !showSearch)}
 				>
 					<Search class="h-4 w-4 shrink-0" />
 					Search
 				</Button>
-				<Button variant="ghost" size="icon" class="h-8 w-8 shrink-0" aria-label="Settings">
+				<Button variant="ghost" size="icon" class="h-8 w-8 shrink-0 cursor-pointer" aria-label="Settings">
 					<Settings class="h-4 w-4" />
 				</Button>
 			</div>
@@ -193,7 +199,7 @@
 								<!-- Main clickable area -->
 								<button
 									onclick={() => handleSelectConvo(convo.id)}
-									class="flex min-w-0 flex-1 items-center gap-2 text-left"
+									class="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer"
 								>
 									<MessageSquare class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
 
@@ -211,7 +217,7 @@
 								<!-- Separate delete button -->
 								<button
 									onclick={(e) => handleDeleteConvo(e, convo.id)}
-									class="invisible shrink-0 rounded p-0.5 group-hover:visible hover:text-destructive"
+									class="invisible shrink-0 rounded p-0.5 group-hover:visible hover:text-destructive cursor-pointer"
 									aria-label="Delete conversation"
 								>
 									<Trash2 class="h-3 w-3" />
@@ -227,7 +233,11 @@
 	{/if}
 
 	<!-- Bottom: theme toggle + profile -->
-	<div class="flex flex-col gap-2 border-t border-border p-2" class:items-center={collapsed}>
+	<div
+		class="z-20 flex flex-col gap-2 border-t border-border bg-sidebar p-2"
+		class:items-center={collapsed}
+		class:border-none={collapsed}
+	>
 		<!-- Theme toggle -->
 		{#if collapsed}
 			<Tooltip>
@@ -236,7 +246,7 @@
 						variant="ghost"
 						size="icon"
 						onclick={() => themeStore.toggle()}
-						class="h-9 w-9"
+						class="h-9 w-9 cursor-pointer"
 						aria-label="Toggle theme"
 					>
 						{#if themeStore.isDark}
@@ -258,7 +268,7 @@
 			class:justify-center={collapsed}
 		>
 			<div
-				class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-violet-500 to-fuchsia-500 text-xs font-bold text-white"
+				class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-zinc-900 to-zinc-950 text-xs font-bold text-white"
 			>
 				U
 			</div>
@@ -272,7 +282,7 @@
 					variant="ghost"
 					size="icon"
 					onclick={() => themeStore.toggle()}
-					class="h-7 w-7 shrink-0"
+					class="h-7 w-7 shrink-0 cursor-pointer"
 					aria-label="Toggle theme"
 				>
 					{#if themeStore.isDark}

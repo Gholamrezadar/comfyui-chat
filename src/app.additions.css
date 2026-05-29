@@ -1,16 +1,10 @@
-/* src/app.css
-   Add these CSS variable additions to your existing maia theme app.css
-   Paste the :root and .dark blocks into your existing file,
-   or import this after your shadcn base styles. */
-
 @layer base {
 	:root {
-		/* Sidebar background - slightly cooler than the main background */
-		--sidebar-background: 210 20% 98%;
+		--sidebar-background: var(--color-background);
 	}
 
 	.dark {
-		--sidebar-background: 222 20% 10%;
+		--sidebar-background: var(--color-background);
 	}
 }
 

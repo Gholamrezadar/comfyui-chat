@@ -48,7 +48,7 @@
 		variant="ghost"
 		size="icon"
 		onclick={handleImageAttach}
-		class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+		class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
 	>
 		<ImagePlus class="h-4 w-4" />
 	</Button>
@@ -71,7 +71,7 @@
 	<div class="flex items-center gap-2">
 		<!-- Model selector (static placeholder like image) -->
 		<button
-			class="flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
+			class="flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
 		>
 			<Box class="h-3.5 w-3.5" />
 			Qwen 3.5 9B
@@ -82,10 +82,10 @@
 			size="icon"
 			onclick={handleSend}
 			disabled={!inputValue.trim() || chatStore.isResponding}
-			class="h-8 w-8 rounded-full"
+			class="h-8 w-8 rounded-full cursor-pointer"
 		>
 			{#if chatStore.isResponding}
-				<LoaderCircle class="h-4 w-4 animate-spin" />
+				<LoaderCircle class="h-4 w-4 animate-spin cursor-wait" />
 			{:else}
 				<ArrowUp class="h-4 w-4" />
 			{/if}

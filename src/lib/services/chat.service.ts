@@ -18,6 +18,7 @@ export interface Conversation {
 
 const STORAGE_KEY = 'comfyui-chat-conversations';
 const ACTIVE_KEY = 'comfyui-chat-active-id';
+const SIDEBAR_KEY = 'comfyui-chat-sidebar-open';
 
 // Generate a simple unique id
 function uid(): string {
@@ -133,4 +134,19 @@ export function searchConversations(
 			c.title.toLowerCase().includes(q) ||
 			c.messages.some((m) => m.content.toLowerCase().includes(q))
 	);
+}
+
+
+export function saveSidebarState(isOpen: boolean) {
+	if (typeof localStorage === 'undefined') return;
+	localStorage.setItem(SIDEBAR_KEY, isOpen.toString());
+}
+
+export function loadSidebarState(): boolean {
+	if (typeof localStorage === 'undefined') return false;
+
+	const value = localStorage.getItem(SIDEBAR_KEY);
+	if (value === null) return false;
+
+	return value === 'true';
 }
