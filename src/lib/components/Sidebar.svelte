@@ -1,0 +1,287 @@
+<script lang="ts">
+	import { chatStore } from '$lib/stores/chat.store.svelte';
+	import { themeStore } from '$lib/stores/theme.store.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
+	import {
+		MessageSquarePlus,
+		Search,
+		Settings,
+		ChevronLeft,
+		ChevronRight,
+		Sun,
+		Moon,
+		Trash2,
+		MessageSquare,
+		Bot
+	} from 'lucide-svelte';
+
+	// Props
+	let { collapsed = $bindable(false) }: { collapsed: boolean } = $props();
+
+	let showSearch = $state(false);
+	let searchInput = $state('');
+
+	// Sync search query with the store
+	$effect(() => {
+		chatStore.setSearchQuery(searchInput);
+	});
+
+	function handleSelectConvo(id: string) {
+		chatStore.selectConversation(id);
+	}
+
+	function handleDeleteConvo(e: MouseEvent, id: string) {
+		e.stopPropagation();
+		chatStore.deleteConversation(id);
+	}
+
+	function formatTime(ts: number): string {
+		const d = new Date(ts);
+		const now = new Date();
+		const diffMs = now.getTime() - d.getTime();
+		const diffDays = Math.floor(diffMs / 86400000);
+		if (diffDays === 0) return 'Today';
+		if (diffDays === 1) return 'Yesterday';
+		if (diffDays < 7) return `${diffDays}d ago`;
+		return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+	}
+</script>
+
+<aside
+	class="fixed top-0 left-0 z-50 flex h-full flex-col border-r border-border bg-sidebar transition-all duration-0 ease-in-out md:relative md:h-full"
+	class:w-full={!collapsed}
+	class:w-14={collapsed}
+	class:md:w-64={!collapsed}
+	class:md:w-14={collapsed}
+>
+	<!-- Toggle button -->
+	<button
+		onclick={() => (collapsed = !collapsed)}
+		class="absolute top-3 right-3 z-20 flex h-8 w-8 items-center justify-center rounded-full shadow-sm transition-colors hover:bg-accent cursor-pointer"
+		aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+	>
+		{#if collapsed}
+			<ChevronRight class="h-4 w-4" />
+		{:else}
+			<ChevronLeft class="h-4 w-4" />
+		{/if}
+	</button>
+
+	<!-- Header -->
+	<div class="flex items-center gap-2 px-3 py-3" class:justify-center={collapsed}>
+		{#if !collapsed}
+			<div class="flex min-w-0 flex-1 items-center gap-2">
+				<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary">
+					<Bot class="h-4 w-4 text-primary-foreground" />
+				</div>
+				<span class="truncate text-sm font-semibold text-foreground">LLM Chat</span>
+			</div>
+		{:else}
+			<div
+				class="invisible flex h-7 w-7 items-center justify-center rounded-lg bg-primary"
+			>
+				<Bot class="h-4 w-4 text-primary-foreground" />
+			</div>
+		{/if}
+	</div>
+
+	<!-- Action buttons -->
+	<div class="flex flex-col gap-1 px-2" class:items-center={collapsed}>
+		{#if collapsed}
+			<!-- Icon-only mode -->
+			<Tooltip>
+				<TooltipTrigger>
+					<Button
+						variant="ghost"
+						size="icon"
+						onclick={() => chatStore.newConversation()}
+						class="h-9 w-9"
+						aria-label="New chat"
+					>
+						<MessageSquarePlus class="h-4 w-4" />
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent side="right">New Chat</TooltipContent>
+			</Tooltip>
+
+			<Tooltip>
+				<TooltipTrigger>
+					<Button
+						variant="ghost"
+						size="icon"
+						onclick={() => {
+							collapsed = false;
+							showSearch = true;
+						}}
+						class="h-9 w-9"
+						aria-label="Search"
+					>
+						<Search class="h-4 w-4" />
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent side="right">Search</TooltipContent>
+			</Tooltip>
+
+			<Tooltip>
+				<TooltipTrigger>
+					<Button variant="ghost" size="icon" class="h-9 w-9" aria-label="Settings">
+						<Settings class="h-4 w-4" />
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent side="right">Settings</TooltipContent>
+			</Tooltip>
+		{:else}
+			<!-- Full mode -->
+			<Button
+				variant="default"
+				class="h-9 w-full justify-start gap-2 text-sm"
+				onclick={() => chatStore.newConversation()}
+			>
+				<MessageSquarePlus class="h-4 w-4 shrink-0" />
+				New Chat
+			</Button>
+
+			<div class="mt-1 flex gap-1">
+				<Button
+					variant="ghost"
+					size="sm"
+					class="flex-1 justify-start gap-2 text-sm"
+					onclick={() => (showSearch = !showSearch)}
+				>
+					<Search class="h-4 w-4 shrink-0" />
+					Search
+				</Button>
+				<Button variant="ghost" size="icon" class="h-8 w-8 shrink-0" aria-label="Settings">
+					<Settings class="h-4 w-4" />
+				</Button>
+			</div>
+
+			{#if showSearch}
+				<div class="mt-1">
+					<Input
+						bind:value={searchInput}
+						placeholder="Search conversations..."
+						class="h-8 text-sm"
+					/>
+				</div>
+			{/if}
+		{/if}
+	</div>
+
+	<!-- Recent conversations -->
+	{#if !collapsed}
+		<div class="mt-4 min-h-0 flex-1">
+			<p class="px-4 pb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
+				Recent
+			</p>
+			<ScrollArea class="h-full px-2">
+				{#if chatStore.filteredConversations.length === 0}
+					<p class="px-2 py-4 text-center text-xs text-muted-foreground">
+						{chatStore.searchQuery ? 'No results found' : 'No conversations yet'}
+					</p>
+				{:else}
+					<div class="flex flex-col gap-0.5 pb-4">
+						{#each chatStore.filteredConversations as convo (convo.id)}
+							<div
+								class="group relative flex w-full items-center gap-2 rounded-md px-2 py-2 transition-colors hover:bg-accent"
+								class:bg-accent={chatStore.activeId === convo.id}
+								class:text-accent-foreground={chatStore.activeId === convo.id}
+							>
+								<!-- Main clickable area -->
+								<button
+									onclick={() => handleSelectConvo(convo.id)}
+									class="flex min-w-0 flex-1 items-center gap-2 text-left"
+								>
+									<MessageSquare class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+
+									<div class="min-w-0 flex-1">
+										<p class="truncate text-xs leading-tight font-medium">
+											{convo.title}
+										</p>
+
+										<p class="text-[10px] text-muted-foreground">
+											{formatTime(convo.updatedAt)}
+										</p>
+									</div>
+								</button>
+
+								<!-- Separate delete button -->
+								<button
+									onclick={(e) => handleDeleteConvo(e, convo.id)}
+									class="invisible shrink-0 rounded p-0.5 group-hover:visible hover:text-destructive"
+									aria-label="Delete conversation"
+								>
+									<Trash2 class="h-3 w-3" />
+								</button>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</ScrollArea>
+		</div>
+	{:else}
+		<div class="flex-1"></div>
+	{/if}
+
+	<!-- Bottom: theme toggle + profile -->
+	<div class="flex flex-col gap-2 border-t border-border p-2" class:items-center={collapsed}>
+		<!-- Theme toggle -->
+		{#if collapsed}
+			<Tooltip>
+				<TooltipTrigger>
+					<Button
+						variant="ghost"
+						size="icon"
+						onclick={() => themeStore.toggle()}
+						class="h-9 w-9"
+						aria-label="Toggle theme"
+					>
+						{#if themeStore.isDark}
+							<Sun class="h-4 w-4" />
+						{:else}
+							<Moon class="h-4 w-4" />
+						{/if}
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent side="right"
+					>{themeStore.isDark ? 'Light mode' : 'Dark mode'}</TooltipContent
+				>
+			</Tooltip>
+		{/if}
+
+		<!-- Profile card -->
+		<div
+			class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent"
+			class:justify-center={collapsed}
+		>
+			<div
+				class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-violet-500 to-fuchsia-500 text-xs font-bold text-white"
+			>
+				U
+			</div>
+			{#if !collapsed}
+				<div class="min-w-0 flex-1">
+					<p class="truncate text-xs font-medium">User</p>
+					<p class="truncate text-[10px] text-muted-foreground">user@example.com</p>
+				</div>
+				<!-- Theme toggle in full mode -->
+				<Button
+					variant="ghost"
+					size="icon"
+					onclick={() => themeStore.toggle()}
+					class="h-7 w-7 shrink-0"
+					aria-label="Toggle theme"
+				>
+					{#if themeStore.isDark}
+						<Sun class="h-3.5 w-3.5" />
+					{:else}
+						<Moon class="h-3.5 w-3.5" />
+					{/if}
+				</Button>
+			{/if}
+		</div>
+	</div>
+</aside>
