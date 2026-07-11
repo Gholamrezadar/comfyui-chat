@@ -1,4 +1,4 @@
-import { type Conversation } from '$lib/services/chat.service';
+import { type Conversation, type Message } from '$lib/services/chat.service';
 import * as chatService from '$lib/services/chat.service';
 
 function createChatStore() {
@@ -7,6 +7,8 @@ function createChatStore() {
 	let isResponding = $state(false);
 	let searchQuery = $state('');
 	let isSidebarOpen = $state(false);
+	let replyToMessage = $state<Message | null>(null);
+	let editingMessage = $state<Message | null>(null);
 
 	// Derived: currently active conversation
 	const activeConversation = $derived(
@@ -62,20 +64,33 @@ function createChatStore() {
 			activeId = convo.id;
 		}
 
+		// Capture reply context before clearing
+		const replyId = replyToMessage?.id;
+		const replyContent = replyToMessage?.content;
+		replyToMessage = null;
+
 		// Add the user message
-		const afterUser = chatService.addUserMessage(convo, content);
+		const afterUser = chatService.addUserMessage(convo, content, replyId, replyContent);
 		conversations = conversations.map((c) => (c.id === afterUser.id ? afterUser : c));
 		isResponding = true;
 		persist();
 
+		// Assistant replies to the user message we just sent
+		const newUserMsg = afterUser.messages[afterUser.messages.length - 1];
+
 		// Fake assistant response via service callback
-		chatService.addAssistantMessage(afterUser, (afterAssistant) => {
-			conversations = conversations.map((c) =>
-				c.id === afterAssistant.id ? afterAssistant : c
-			);
-			isResponding = false;
-			persist();
-		});
+		chatService.addAssistantMessage(
+			afterUser,
+			(afterAssistant) => {
+				conversations = conversations.map((c) =>
+					c.id === afterAssistant.id ? afterAssistant : c
+				);
+				isResponding = false;
+				persist();
+			},
+			newUserMsg.id,
+			newUserMsg.content
+		);
 	}
 
 	// Delete a conversation; deselect if it was active
@@ -96,6 +111,49 @@ function createChatStore() {
 		chatService.saveSidebarState(isOpen);
 	}
 
+	// Set a message as the reply target
+	function setReplyTo(message: Message) {
+		replyToMessage = message;
+		editingMessage = null;
+	}
+
+	// Cancel the current reply
+	function cancelReply() {
+		replyToMessage = null;
+	}
+
+	// Set a message for inline editing
+	function setEditing(message: Message) {
+		editingMessage = message;
+		replyToMessage = null;
+	}
+
+	// Cancel the current edit
+	function cancelEdit() {
+		editingMessage = null;
+	}
+
+	// Edit a message's content
+	function editMessage(messageId: string, newContent: string) {
+		let convo = activeConversation;
+		if (!convo) return;
+
+		const updated = chatService.editMessage(convo, messageId, newContent);
+		conversations = conversations.map((c) => (c.id === updated.id ? updated : c));
+		editingMessage = null;
+		persist();
+	}
+
+	// Delete a message
+	function deleteMessage(messageId: string) {
+		let convo = activeConversation;
+		if (!convo) return;
+
+		const updated = chatService.deleteMessage(convo, messageId);
+		conversations = conversations.map((c) => (c.id === updated.id ? updated : c));
+		persist();
+	}
+
 	return {
 		// State (read-only from outside via getters)
 		get conversations() { return conversations; },
@@ -105,6 +163,8 @@ function createChatStore() {
 		get isResponding() { return isResponding; },
 		get searchQuery() { return searchQuery; },
 		get isSidebarOpen() { return isSidebarOpen; },
+		get replyToMessage() { return replyToMessage; },
+		get editingMessage() { return editingMessage; },
 
 		// Actions
 		init,
@@ -114,6 +174,12 @@ function createChatStore() {
 		deleteConversation,
 		setSearchQuery,
 		saveSidebarState,
+		setReplyTo,
+		cancelReply,
+		setEditing,
+		cancelEdit,
+		editMessage,
+		deleteMessage,
 	};
 }
 

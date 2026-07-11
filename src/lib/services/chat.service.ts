@@ -6,6 +6,8 @@ export interface Message {
 	role: Role;
 	content: string;
 	timestamp: number;
+	replyToId?: string;
+	replyToContent?: string;
 }
 
 export interface Conversation {
@@ -70,12 +72,18 @@ export function createConversation(): Conversation {
 }
 
 // Add a user message and return the updated conversation
-export function addUserMessage(conversation: Conversation, content: string): Conversation {
+export function addUserMessage(
+	conversation: Conversation,
+	content: string,
+	replyToId?: string,
+	replyToContent?: string
+): Conversation {
 	const message: Message = {
 		id: uid(),
 		role: 'user',
 		content,
-		timestamp: Date.now()
+		timestamp: Date.now(),
+		...(replyToId && replyToContent ? { replyToId, replyToContent } : {})
 	};
 
 	// Derive a title from the first user message
@@ -93,7 +101,9 @@ export function addUserMessage(conversation: Conversation, content: string): Con
 // Simulate an LLM response and return the updated conversation
 export function addAssistantMessage(
 	conversation: Conversation,
-	onComplete: (updated: Conversation) => void
+	onComplete: (updated: Conversation) => void,
+	replyToId?: string,
+	replyToContent?: string
 ): void {
 	// Fake streaming delay
 	setTimeout(() => {
@@ -101,7 +111,8 @@ export function addAssistantMessage(
 			id: uid(),
 			role: 'assistant',
 			content: 'Hello! How can I help you today?',
-			timestamp: Date.now()
+			timestamp: Date.now(),
+			...(replyToId && replyToContent ? { replyToId, replyToContent } : {})
 		};
 
 		const updated: Conversation = {
@@ -112,6 +123,33 @@ export function addAssistantMessage(
 
 		onComplete(updated);
 	}, 600);
+}
+
+// Edit a message's content and return the updated conversation
+export function editMessage(
+	conversation: Conversation,
+	messageId: string,
+	newContent: string
+): Conversation {
+	return {
+		...conversation,
+		messages: conversation.messages.map((m) =>
+			m.id === messageId ? { ...m, content: newContent } : m
+		),
+		updatedAt: Date.now()
+	};
+}
+
+// Delete a message and return the updated conversation
+export function deleteMessage(
+	conversation: Conversation,
+	messageId: string
+): Conversation {
+	return {
+		...conversation,
+		messages: conversation.messages.filter((m) => m.id !== messageId),
+		updatedAt: Date.now()
+	};
 }
 
 // Delete a conversation by id, returns the new list

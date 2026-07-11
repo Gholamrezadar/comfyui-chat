@@ -2,7 +2,7 @@
 	import { chatStore } from '$lib/stores/chat.store.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { ImagePlus, LoaderCircle, ArrowUp, Box } from 'lucide-svelte';
+	import { ImagePlus, LoaderCircle, ArrowUp, Box, Reply, X } from 'lucide-svelte';
 
 	let inputValue = $state('');
 	let textareaEl: HTMLTextAreaElement | undefined = $state();
@@ -38,6 +38,23 @@
 		console.log('attach');
 	}
 </script>
+
+<!-- Reply context bar -->
+{#if chatStore.replyToMessage}
+	<div class="mb-2 flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs">
+		<Reply class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+		<div class="flex-1 min-w-0">
+			<span class="font-medium text-foreground">Replying to {chatStore.replyToMessage.role === 'user' ? 'yourself' : 'assistant'}</span>
+			<p class="truncate text-muted-foreground">{chatStore.replyToMessage.content}</p>
+		</div>
+		<button
+			onclick={() => chatStore.cancelReply()}
+			class="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground cursor-pointer"
+		>
+			<X class="h-3.5 w-3.5" />
+		</button>
+	</div>
+{/if}
 
 <!-- Composer -->
 <div
