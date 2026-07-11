@@ -6,7 +6,7 @@
 	import { tick } from 'svelte';
 
 	let inputValue = $state('');
-	let textareaEl: HTMLTextAreaElement | undefined = $state();
+	let textareaEl: HTMLTextAreaElement | null = $state(null);
 	let fileInputEl: HTMLInputElement | undefined = $state();
 	let pendingImages = $state<string[]>([]);
 	let isDragging = $state(false);
@@ -219,7 +219,7 @@
 		<!-- Center: textarea -->
 		<div class="flex flex-1 items-center">
 			<Textarea
-				ref={textareaEl}
+				bind:ref={textareaEl}
 				bind:value={inputValue}
 				oninput={autoResize}
 				onkeydown={handleKeydown}
