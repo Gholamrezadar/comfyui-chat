@@ -52,6 +52,7 @@
 	}
 </script>
 
+<!-- Sidebar Container -->
 <aside
 	class="top-0 left-0 z-50 flex h-full flex-col border-r border-border bg-sidebar transition-all duration-0 ease-in-out md:relative md:h-full"
 	class:w-full={!collapsed}
@@ -59,7 +60,7 @@
 	class:md:w-64={!collapsed}
 	class:md:w-14={collapsed}
 >
-	<!-- Toggle button -->
+	<!-- Sidebar Toggle Button -->
 	<button
 		onclick={() => {
 			collapsed = !collapsed;
@@ -78,9 +79,10 @@
 		{/if}
 	</button>
 
-	<!-- Header -->
+	<!-- Sidebar Header -->
 	<div class="flex items-center gap-2 px-3 py-3" class:justify-center={collapsed}>
 		{#if !collapsed}
+			<!-- Expanded Brand -->
 			<div class="flex min-w-0 flex-1 items-center gap-2">
 				<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary">
 					<Bot class="h-4 w-4 text-primary-foreground" />
@@ -88,16 +90,17 @@
 				<span class="truncate text-sm font-semibold text-foreground">LLM Chat</span>
 			</div>
 		{:else}
+			<!-- Collapsed Brand Spacer -->
 			<div class="invisible flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
 				<Bot class="h-4 w-4 text-primary-foreground" />
 			</div>
 		{/if}
 	</div>
 
-	<!-- Action buttons -->
+	<!-- Sidebar Action Buttons -->
 	<div class="flex flex-col gap-1 px-2" class:items-center={collapsed}>
 		{#if collapsed}
-			<!-- Icon-only mode -->
+			<!-- Collapsed Actions -->
 			<Tooltip>
 				<TooltipTrigger>
 					<Button
@@ -140,7 +143,7 @@
 				<TooltipContent side="right">Settings</TooltipContent>
 			</Tooltip>
 		{:else}
-			<!-- Full mode -->
+			<!-- Expanded Actions -->
 			<Button
 				variant="default"
 				class="h-9 w-full justify-start gap-2 text-sm cursor-pointer"
@@ -150,6 +153,7 @@
 				New Chat
 			</Button>
 
+			<!-- Search/Settings Row -->
 			<div class="mt-1 flex gap-1">
 				<Button
 					variant="ghost"
@@ -165,6 +169,7 @@
 				</Button>
 			</div>
 
+			<!-- Search Input -->
 			{#if showSearch}
 				<div class="mt-1">
 					<Input
@@ -177,26 +182,31 @@
 		{/if}
 	</div>
 
-	<!-- Recent conversations -->
+	<!-- Recent Conversations -->
 	{#if !collapsed}
 		<div class="mt-4 min-h-0 flex-1">
+			<!-- Recent Header -->
 			<p class="px-4 pb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
 				Recent
 			</p>
+			<!-- Conversation Scroll Area -->
 			<ScrollArea class="h-full px-2">
 				{#if chatStore.filteredConversations.length === 0}
+					<!-- Empty Conversations State -->
 					<p class="px-2 py-4 text-center text-xs text-muted-foreground">
 						{chatStore.searchQuery ? 'No results found' : 'No conversations yet'}
 					</p>
 				{:else}
+					<!-- Conversation List -->
 					<div class="flex flex-col gap-0.5 pb-4">
 						{#each chatStore.filteredConversations as convo (convo.id)}
+							<!-- Conversation Row -->
 							<div
 								class="group relative flex w-full items-center gap-2 rounded-md px-2 py-2 transition-colors hover:bg-accent"
 								class:bg-accent={chatStore.activeId === convo.id}
 								class:text-accent-foreground={chatStore.activeId === convo.id}
 							>
-								<!-- Main clickable area -->
+								<!-- Conversation Select Button -->
 								<button
 									onclick={() => handleSelectConvo(convo.id)}
 									class="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer"
@@ -214,7 +224,7 @@
 									</div>
 								</button>
 
-								<!-- Separate delete button -->
+								<!-- Conversation Delete Button -->
 								<button
 									onclick={(e) => handleDeleteConvo(e, convo.id)}
 									class="invisible shrink-0 rounded p-0.5 group-hover:visible hover:text-destructive cursor-pointer"
@@ -229,16 +239,17 @@
 			</ScrollArea>
 		</div>
 	{:else}
+		<!-- Collapsed Sidebar Spacer -->
 		<div class="flex-1"></div>
 	{/if}
 
-	<!-- Bottom: theme toggle + profile -->
+	<!-- Sidebar Footer -->
 	<div
 		class="z-20 flex flex-col gap-2 border-t border-border bg-sidebar p-2"
 		class:items-center={collapsed}
 		class:border-none={collapsed}
 	>
-		<!-- Theme toggle -->
+		<!-- Collapsed Theme Toggle -->
 		{#if collapsed}
 			<Tooltip>
 				<TooltipTrigger>
@@ -262,7 +273,7 @@
 			</Tooltip>
 		{/if}
 
-		<!-- Profile card -->
+		<!-- Profile Card -->
 		<div
 			class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent"
 			class:justify-center={collapsed}
@@ -273,11 +284,12 @@
 				U
 			</div>
 			{#if !collapsed}
+				<!-- Profile Text -->
 				<div class="min-w-0 flex-1">
 					<p class="truncate text-xs font-medium">User</p>
 					<p class="truncate text-[10px] text-muted-foreground">user@example.com</p>
 				</div>
-				<!-- Theme toggle in full mode -->
+				<!-- Expanded Theme Toggle -->
 				<Button
 					variant="ghost"
 					size="icon"

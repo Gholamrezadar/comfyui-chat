@@ -18,11 +18,12 @@
 </script>
 
 {#if loaded}
+	<!-- App Shell -->
 	<div class="flex h-screen w-screen overflow-hidden bg-background text-foreground antialiased">
 		<!-- Sidebar -->
 		<Sidebar bind:collapsed={sidebarCollapsed} />
 	
-		<!-- Main area -->
+		<!-- Main Chat Area -->
 		<main class="flex flex-1 min-w-0 flex-col overflow-hidden">
 			<ChatView />
 		</main>

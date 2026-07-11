@@ -131,7 +131,7 @@
 	);
 </script>
 
-<!-- Hidden file input -->
+<!-- Hidden File Input -->
 <input
 	bind:this={fileInputEl}
 	type="file"
@@ -141,19 +141,22 @@
 	onchange={handleFileChange}
 />
 
-<!-- Reply context bar -->
+<!-- Reply Context Bar -->
 {#if chatStore.replyToMessage}
 	<div class="mb-2 flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs">
 		<Reply class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+		<!-- Reply Thumbnail -->
 		{#if chatStore.replyToMessage.images?.length}
 			<img src={chatStore.replyToMessage.images[0]} alt="" class="h-6 w-6 shrink-0 rounded object-cover" />
 		{/if}
+		<!-- Reply Text -->
 		<div class="flex-1 min-w-0">
 			<span class="font-medium text-foreground">Replying to {chatStore.replyToMessage.role === 'user' ? 'yourself' : 'assistant'}</span>
 			<p class="truncate text-muted-foreground">
 				{chatStore.replyToMessage.content || 'Image'}
 			</p>
 		</div>
+		<!-- Cancel Reply Button -->
 		<button
 			onclick={() => chatStore.cancelReply()}
 			class="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground cursor-pointer"
@@ -163,7 +166,7 @@
 	</div>
 {/if}
 
-<!-- Drop zone overlay -->
+<!-- Drop Zone Overlay -->
 {#if isDragging}
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
@@ -172,6 +175,7 @@
 		ondragleave={handleDragLeave}
 		ondrop={handleDrop}
 	>
+		<!-- Drop Zone Prompt -->
 		<div class="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-primary bg-card p-8">
 			<ImagePlus class="h-8 w-8 text-primary" />
 			<p class="text-sm font-medium text-foreground">Drop images here</p>
@@ -187,10 +191,11 @@
 	ondragleave={handleDragLeave}
 	ondrop={handleDrop}
 >
-	<!-- Image previews -->
+	<!-- Image Previews -->
 	{#if pendingImages.length > 0}
 		<div class="flex flex-wrap gap-2">
 			{#each pendingImages as img, i}
+				<!-- Image Preview Item -->
 				<div class="group relative h-16 w-16 overflow-hidden rounded-lg border border-border">
 					<img src={img} alt="Upload preview" class="h-full w-full object-cover" />
 					<button
@@ -204,9 +209,9 @@
 		</div>
 	{/if}
 
-	<!-- Input row -->
+	<!-- Input Row -->
 	<div class="flex items-end gap-2">
-		<!-- Left: attach -->
+		<!-- Attach Button -->
 		<Button
 			variant="ghost"
 			size="icon"
@@ -216,7 +221,7 @@
 			<ImagePlus class="h-4 w-4" />
 		</Button>
 
-		<!-- Center: textarea -->
+		<!-- Textarea Container -->
 		<div class="flex flex-1 items-center">
 			<Textarea
 				bind:ref={textareaEl}
@@ -231,8 +236,9 @@
 			/>
 		</div>
 
-		<!-- Right cluster -->
+		<!-- Model/Send Controls -->
 		<div class="flex items-center gap-2">
+			<!-- Model Badge -->
 			<button
 				class="flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
 			>
@@ -240,6 +246,7 @@
 				Qwen 3.5 9B
 			</button>
 
+			<!-- Send Button -->
 			<Button
 				size="icon"
 				onclick={handleSend}
@@ -256,7 +263,7 @@
 	</div>
 </div>
 
-<!-- Hint -->
+<!-- Composer Hint -->
 <p class="mt-1.5 text-center text-[10px] text-muted-foreground">
 	Enter to send · Shift+Enter for newline · Paste or drag images
 </p>

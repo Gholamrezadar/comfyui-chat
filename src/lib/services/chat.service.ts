@@ -89,7 +89,7 @@ export function addUserMessage(
 		role: 'user',
 		content,
 		timestamp: Date.now(),
-		...(replyToId && replyToContent ? { replyToId, replyToContent } : {}),
+		...(replyToId ? { replyToId, replyToContent: replyToContent ?? '' } : {}),
 		...(images && images.length > 0 ? { images } : {})
 	};
 
@@ -120,7 +120,7 @@ export function addAssistantMessage(
 			role: 'assistant',
 			content: 'Hello! How can I help you today?',
 			timestamp: Date.now(),
-			...(replyToId && replyToContent ? { replyToId, replyToContent } : {}),
+			...(replyToId ? { replyToId, replyToContent: replyToContent ?? '' } : {}),
 			...(images && images.length > 0 ? { images } : {})
 		};
 

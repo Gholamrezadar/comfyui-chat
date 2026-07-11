@@ -7,10 +7,12 @@
 	let { children } = $props();
 </script>
 
+<!-- Document Head -->
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
+<!-- Tooltip Provider -->
 <TooltipProvider>
 	{@render children()}
 </TooltipProvider>

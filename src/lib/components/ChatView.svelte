@@ -8,11 +8,12 @@
 	const hasMessages = $derived((chatStore.activeConversation?.messages.length ?? 0) > 0);
 </script>
 
+<!-- Chat View Layout -->
 <div class="flex h-full flex-col">
 	{#if !chatStore.activeConversation || !hasMessages}
-		<!-- Welcome / empty state - chatbox centered -->
+		<!-- Welcome Empty State -->
 		<div class="flex flex-1 flex-col items-center justify-center gap-8 px-4">
-			<!-- Hero -->
+			<!-- Welcome Hero -->
 			<div class="flex flex-col items-center gap-3 text-center">
 				<div
 					class="flex hidden h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg"
@@ -27,24 +28,23 @@
 				</div>
 			</div>
 
-			<!-- Input in center -->
+			<!-- Centered Chat Input -->
 			<div class="w-full max-w-xl">
 				<ChatInput />
 			</div>
 		</div>
 	{:else}
-		<!-- Active conversation -->
-		<!-- Header with conversation title -->
+		<!-- Active Conversation Header -->
 		<div class="flex items-center px-6 py-3">
 			<h2 class="truncate text-sm font-medium text-foreground">
 				{chatStore.activeConversation.title}
 			</h2>
 		</div>
 
-		<!-- Messages -->
+		<!-- Message List -->
 		<MessageList />
 
-		<!-- Input pinned to bottom -->
+		<!-- Bottom Chat Input -->
 		<div class="bg-background px-4 py-3">
 			<div class="mx-auto max-w-2xl">
 				<ChatInput />
