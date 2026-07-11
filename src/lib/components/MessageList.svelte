@@ -114,7 +114,7 @@
 		{#each chatStore.activeConversation?.messages ?? [] as message (message.id)}
 			{#if message.role === 'user'}
 				<!-- User message: bubble aligned right -->
-				<div class="group/msg flex items-end justify-end gap-2" data-message-id={message.id}>
+				<div class="group/msg flex items-end justify-end" data-message-id={message.id}>
 					<!-- Bubble -->
 					<div class="flex flex-col items-end gap-1">
 						<!-- Reply indicator -->
@@ -190,12 +190,12 @@
 							</div>
 						{/if}
 
-						<!-- Timestamp -->
-						<span class="text-[10px] text-muted-foreground">{formatTimestamp(message.timestamp)}</span>
-
 						<!-- Hover action buttons -->
 						{#if chatStore.editingMessage?.id !== message.id}
-							<div class="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+							<div class="flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
+								<span class="text-[10px] text-muted-foreground">
+									{formatTimestamp(message.timestamp)}
+								</span>
 								<button
 									onclick={() => chatStore.setReplyTo(message)}
 									class="rounded p-1 text-muted-foreground hover:text-foreground cursor-pointer"
@@ -219,10 +219,6 @@
 								</button>
 							</div>
 						{/if}
-					</div>
-					<!-- User Profile -->
-					<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-zinc-900 to-zinc-950 text-xs font-bold text-white">
-						U
 					</div>
 				</div>
 			{:else}
@@ -274,10 +270,11 @@
 						{#if message.content}
 							<p class="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.content}</p>
 						{/if}
-						<span class="text-[10px] text-muted-foreground">{formatTimestamp(message.timestamp)}</span>
-
 						<!-- Hover action buttons -->
-						<div class="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+						<div class="flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
+							<span class="text-[10px] text-muted-foreground">
+								{formatTimestamp(message.timestamp)}
+							</span>
 							<button
 								onclick={() => chatStore.setReplyTo(message)}
 								class="rounded p-1 text-muted-foreground hover:text-foreground cursor-pointer"

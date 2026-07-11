@@ -268,7 +268,7 @@
 			class:justify-center={collapsed}
 		>
 			<div
-				class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-zinc-900 to-zinc-950 text-xs font-bold text-white"
+				class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sidebar-border bg-linear-to-br from-zinc-900 to-zinc-950 text-xs font-bold text-white"
 			>
 				U
 			</div>
