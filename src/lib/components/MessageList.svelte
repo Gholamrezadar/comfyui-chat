@@ -8,6 +8,12 @@
 	let editContent = $state('');
 	let EditTextareaEl: HTMLTextAreaElement | undefined = $state();
 	let lightboxImage = $state<string | null>(null);
+	let highlightedMessageId = $state<string | null>(null);
+	let highlightFadeMessageId = $state<string | null>(null);
+	let highlightTimer: ReturnType<typeof setTimeout> | undefined;
+
+	const REPLY_HIGHLIGHT_HOLD_MS = 1000;
+	const REPLY_HIGHLIGHT_FADE_MS = 1500;
 
 	$effect(() => {
 		const _ = chatStore.activeConversation?.messages.length;
@@ -71,11 +77,27 @@
 	function scrollToMessage(id: string) {
 		const el = scrollEl?.querySelector(`[data-message-id="${id}"]`);
 		if (el) {
-			el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-			el.classList.add('ring-2', 'ring-primary/50', 'rounded-xl');
-			setTimeout(() => {
-				el.classList.remove('ring-2', 'ring-primary/50', 'rounded-xl');
-			}, 1500);
+			const container = scrollEl;
+			const containerRect = container.getBoundingClientRect();
+			const targetRect = el.getBoundingClientRect();
+			const targetTop =
+				targetRect.top - containerRect.top + container.scrollTop - container.clientHeight / 2 +
+				targetRect.height / 2;
+			container.scrollTo({
+				top: Math.max(0, targetTop),
+				behavior: 'smooth'
+			});
+
+			if (highlightTimer) clearTimeout(highlightTimer);
+			highlightedMessageId = id;
+			highlightFadeMessageId = null;
+			highlightTimer = setTimeout(() => {
+				highlightFadeMessageId = id;
+				setTimeout(() => {
+					if (highlightedMessageId === id) highlightedMessageId = null;
+					if (highlightFadeMessageId === id) highlightFadeMessageId = null;
+				}, REPLY_HIGHLIGHT_FADE_MS);
+			}, REPLY_HIGHLIGHT_HOLD_MS);
 		}
 	}
 
@@ -116,21 +138,25 @@
 				<!-- User message: bubble aligned right -->
 				<div class="group/msg flex items-end justify-end" data-message-id={message.id}>
 					<!-- Bubble -->
-					<div class="flex flex-col items-end gap-1">
+					<div class="flex flex-col items-end gap-2">
 						<!-- Reply indicator -->
 						{#if message.replyToId}
 							{@const repliedMsg = findMessageById(message.replyToId)}
 							<button
 								onclick={() => scrollToMessage(message.replyToId!)}
-								class="flex items-center gap-1.5 rounded-t-lg border border-b-0 border-border bg-muted/50 px-2 py-1 text-[11px] text-muted-foreground max-w-[280px] cursor-pointer hover:bg-muted transition-colors overflow-hidden"
+								class="flex w-fit max-w-[280px] items-center gap-1.5 self-end rounded-none border-0 bg-transparent px-0 py-0 text-right text-[11px] text-muted-foreground cursor-pointer transition-colors hover:text-foreground"
 							>
-								<Reply class="h-3 w-3 shrink-0" />
-								{#if repliedMsg?.images?.length}
-									<img src={repliedMsg.images[0]} alt="" class="h-5 w-5 shrink-0 rounded object-cover" />
-								{/if}
 								{#if repliedMsg?.content}
 									<span class="truncate">{repliedMsg.content}</span>
 								{/if}
+								{#if repliedMsg?.images?.length}
+									<div class="flex items-center gap-1.5">
+										{#each repliedMsg.images.slice(0, 4) as img}
+											<img src={img} alt="" class="h-6 w-6 shrink-0 rounded-md object-cover" />
+										{/each}
+									</div>
+								{/if}
+								<Reply class="h-3 w-3 shrink-0 scale-x-[-1]" />
 							</button>
 						{/if}
 
@@ -162,7 +188,13 @@
 							</div>
 						{:else}
 							<!-- Content bubble -->
-							<div class="overflow-hidden rounded-xl bg-chat-bubble text-foreground/85 {message.images?.length ? 'p-1' : 'px-4 py-1.5'}">
+						<div
+							class={`overflow-hidden rounded-xl text-foreground/85 transition-colors duration-300 ${
+								highlightedMessageId === message.id && highlightFadeMessageId !== message.id
+									? 'bg-black/20 dark:bg-white/30'
+									: 'bg-chat-bubble'
+							} ${message.images?.length ? 'p-2' : 'px-4 py-1.5'}`}
+						>
 								<!-- Images -->
 								{#if message.images && message.images.length > 0}
 									<div class="{getImageGridClass(message.images.length)}">
@@ -233,11 +265,15 @@
 							{@const repliedMsg = findMessageById(message.replyToId)}
 							<button
 								onclick={() => scrollToMessage(message.replyToId!)}
-								class="flex items-center gap-1.5 rounded-t-lg border border-b-0 border-border bg-muted/50 px-2 py-1 text-[11px] text-muted-foreground max-w-[280px] cursor-pointer hover:bg-muted transition-colors overflow-hidden"
+								class="flex w-fit max-w-[280px] items-center gap-1.5 self-start rounded-none border-0 bg-transparent px-0 py-0 text-left text-[11px] text-muted-foreground cursor-pointer transition-colors hover:text-foreground"
 							>
 								<Reply class="h-3 w-3 shrink-0" />
 								{#if repliedMsg?.images?.length}
-									<img src={repliedMsg.images[0]} alt="" class="h-5 w-5 shrink-0 rounded object-cover" />
+									<div class="flex items-center gap-1.5">
+										{#each repliedMsg.images.slice(0, 4) as img}
+											<img src={img} alt="" class="h-6 w-6 shrink-0 rounded-md object-cover" />
+										{/each}
+									</div>
 								{/if}
 								{#if repliedMsg?.content}
 									<span class="truncate">{repliedMsg.content}</span>
@@ -245,31 +281,39 @@
 							</button>
 						{/if}
 
-					<!-- Images -->
-					{#if message.images && message.images.length > 0}
-						<div class="{getImageGridClass(message.images.length)} max-w-sm">
-							{#each message.images.slice(0, 4) as img, i}
-								<button
-									onclick={() => openLightbox(img)}
-									class="relative overflow-hidden cursor-pointer {message.images.length === 1 ? 'rounded-lg' : 'first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg'}"
-								>
-									<img
-										src={img}
-										alt="Image {i + 1}"
-										class="w-full object-cover {message.images.length === 1 ? 'max-h-64 rounded-lg' : 'h-24'}"
-									/>
-								</button>
-							{/each}
-						</div>
-						{#if message.images.length > 4}
-							<p class="text-[11px] text-muted-foreground">+{message.images.length - 4} more image{message.images.length - 4 > 1 ? 's' : ''}</p>
-						{/if}
-					{/if}
+						<div
+							class={`w-fit max-w-full rounded-xl px-2 py-2 transition-colors duration-300 ${
+								highlightedMessageId === message.id && highlightFadeMessageId !== message.id
+									? 'bg-black/5 dark:bg-white/12'
+									: 'bg-transparent'
+							}`}
+						>
+							<!-- Images -->
+							{#if message.images && message.images.length > 0}
+								<div class="{getImageGridClass(message.images.length)} max-w-sm">
+									{#each message.images.slice(0, 4) as img, i}
+										<button
+											onclick={() => openLightbox(img)}
+											class="relative overflow-hidden cursor-pointer {message.images.length === 1 ? 'rounded-lg' : 'first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg'}"
+										>
+											<img
+												src={img}
+												alt="Image {i + 1}"
+												class="w-full object-cover {message.images.length === 1 ? 'max-h-64 rounded-lg' : 'h-24'}"
+											/>
+										</button>
+									{/each}
+								</div>
+								{#if message.images.length > 4}
+									<p class="text-[11px] text-muted-foreground">+{message.images.length - 4} more image{message.images.length - 4 > 1 ? 's' : ''}</p>
+								{/if}
+							{/if}
 
-						<!-- Text -->
-						{#if message.content}
-							<p class="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.content}</p>
-						{/if}
+							<!-- Text -->
+							{#if message.content}
+								<p class="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.content}</p>
+							{/if}
+						</div>
 						<!-- Hover action buttons -->
 						<div class="flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
 							<span class="text-[10px] text-muted-foreground">

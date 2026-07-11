@@ -3,12 +3,14 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { ImagePlus, LoaderCircle, ArrowUp, Box, Reply, X } from 'lucide-svelte';
+	import { tick } from 'svelte';
 
 	let inputValue = $state('');
 	let textareaEl: HTMLTextAreaElement | undefined = $state();
 	let fileInputEl: HTMLInputElement | undefined = $state();
 	let pendingImages = $state<string[]>([]);
 	let isDragging = $state(false);
+	let lastReplyTargetId = $state<string | null>(null);
 
 	const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 	const MAX_IMAGES = 5;
@@ -18,6 +20,29 @@
 		textareaEl.style.height = 'auto';
 		textareaEl.style.height = Math.min(textareaEl.scrollHeight, 180) + 'px';
 	}
+
+	function focusComposer() {
+		tick().then(() => {
+			requestAnimationFrame(() => {
+				textareaEl?.focus({ preventScroll: true });
+				autoResize();
+			});
+		});
+	}
+
+	$effect(() => {
+		const replyId = chatStore.replyToMessage?.id ?? null;
+		if (!replyId || replyId === lastReplyTargetId) return;
+
+		lastReplyTargetId = replyId;
+		focusComposer();
+	});
+
+	$effect(() => {
+		if (!chatStore.replyToMessage) {
+			lastReplyTargetId = null;
+		}
+	});
 
 	function handleSend() {
 		const trimmed = inputValue.trim();
