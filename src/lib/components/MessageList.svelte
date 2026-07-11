@@ -7,8 +7,8 @@
 	let scrollEl: HTMLDivElement | undefined = $state();
 	let editContent = $state('');
 	let EditTextareaEl: HTMLTextAreaElement | undefined = $state();
+	let lightboxImage = $state<string | null>(null);
 
-	// Auto-scroll to bottom when messages change
 	$effect(() => {
 		const _ = chatStore.activeConversation?.messages.length;
 		tick().then(() => {
@@ -78,7 +78,36 @@
 			}, 1500);
 		}
 	}
+
+	function getImageGridClass(count: number): string {
+		if (count === 1) return '';
+		if (count === 2) return 'grid grid-cols-2 gap-1';
+		return 'grid grid-cols-2 gap-1';
+	}
+
+	function openLightbox(src: string) {
+		lightboxImage = src;
+	}
+
+	function closeLightbox() {
+		lightboxImage = null;
+	}
 </script>
+
+<!-- Lightbox -->
+{#if lightboxImage}
+	<button
+		class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm cursor-pointer"
+		onclick={closeLightbox}
+		onkeydown={(e) => e.key === 'Escape' && closeLightbox()}
+	>
+		<img
+			src={lightboxImage}
+			alt="Full size"
+			class="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
+		/>
+	</button>
+{/if}
 
 <div bind:this={scrollEl} class="flex-1 overflow-y-auto px-4 py-6">
 	<div class="mx-auto flex max-w-2xl flex-col gap-6">
@@ -93,10 +122,15 @@
 							{@const repliedMsg = findMessageById(message.replyToId)}
 							<button
 								onclick={() => scrollToMessage(message.replyToId!)}
-								class="flex items-center gap-1.5 rounded-t-lg border border-b-0 border-border bg-muted/50 px-2.5 py-1 text-[11px] text-muted-foreground max-w-[280px] cursor-pointer hover:bg-muted transition-colors"
+								class="flex items-center gap-1.5 rounded-t-lg border border-b-0 border-border bg-muted/50 px-2 py-1 text-[11px] text-muted-foreground max-w-[280px] cursor-pointer hover:bg-muted transition-colors overflow-hidden"
 							>
 								<Reply class="h-3 w-3 shrink-0" />
-								<span class="truncate">{repliedMsg ? repliedMsg.content : 'Original message'}</span>
+								{#if repliedMsg?.images?.length}
+									<img src={repliedMsg.images[0]} alt="" class="h-5 w-5 shrink-0 rounded object-cover" />
+								{/if}
+								{#if repliedMsg?.content}
+									<span class="truncate">{repliedMsg.content}</span>
+								{/if}
 							</button>
 						{/if}
 
@@ -127,9 +161,32 @@
 								</div>
 							</div>
 						{:else}
-							<!-- Normal content -->
-							<div class="rounded-xl bg-chat-bubble px-4 py-1.5 text-foreground/85">
-								<p class="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+							<!-- Content bubble -->
+							<div class="overflow-hidden rounded-xl bg-chat-bubble text-foreground/85 {message.images?.length ? 'p-1' : 'px-4 py-1.5'}">
+								<!-- Images -->
+								{#if message.images && message.images.length > 0}
+									<div class="{getImageGridClass(message.images.length)}">
+										{#each message.images.slice(0, 4) as img, i}
+											<button
+												onclick={() => openLightbox(img)}
+												class="relative overflow-hidden cursor-pointer {message.images.length === 1 ? 'rounded-lg' : 'first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg'}"
+											>
+												<img
+													src={img}
+													alt="Uploaded image {i + 1}"
+													class="w-full object-cover {message.images.length === 1 ? 'max-h-64 rounded-lg' : 'h-24'}"
+												/>
+											</button>
+										{/each}
+									</div>
+									{#if message.images.length > 4}
+										<p class="px-3 pt-1 text-[11px] text-muted-foreground">+{message.images.length - 4} more image{message.images.length - 4 > 1 ? 's' : ''}</p>
+									{/if}
+								{/if}
+								<!-- Text caption -->
+								{#if message.content}
+									<p class="whitespace-pre-wrap text-sm leading-relaxed {message.images?.length ? 'px-3 py-1.5' : ''}">{message.content}</p>
+								{/if}
 							</div>
 						{/if}
 
@@ -169,7 +226,7 @@
 					</div>
 				</div>
 			{:else}
-				<!-- Assistant message: no bubble, plain text -->
+				<!-- Assistant message -->
 				<div class="group/msg flex items-start gap-3" data-message-id={message.id}>
 					<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary mt-0.5 hidden">
 						<Bot class="h-4 w-4 text-primary-foreground" />
@@ -180,14 +237,43 @@
 							{@const repliedMsg = findMessageById(message.replyToId)}
 							<button
 								onclick={() => scrollToMessage(message.replyToId!)}
-								class="flex items-center gap-1.5 rounded-t-lg border border-b-0 border-border bg-muted/50 px-2.5 py-1 text-[11px] text-muted-foreground max-w-[280px] cursor-pointer hover:bg-muted transition-colors"
+								class="flex items-center gap-1.5 rounded-t-lg border border-b-0 border-border bg-muted/50 px-2 py-1 text-[11px] text-muted-foreground max-w-[280px] cursor-pointer hover:bg-muted transition-colors overflow-hidden"
 							>
 								<Reply class="h-3 w-3 shrink-0" />
-								<span class="truncate">{repliedMsg ? repliedMsg.content : 'Original message'}</span>
+								{#if repliedMsg?.images?.length}
+									<img src={repliedMsg.images[0]} alt="" class="h-5 w-5 shrink-0 rounded object-cover" />
+								{/if}
+								{#if repliedMsg?.content}
+									<span class="truncate">{repliedMsg.content}</span>
+								{/if}
 							</button>
 						{/if}
 
-						<p class="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.content}</p>
+					<!-- Images -->
+					{#if message.images && message.images.length > 0}
+						<div class="{getImageGridClass(message.images.length)} max-w-sm">
+							{#each message.images.slice(0, 4) as img, i}
+								<button
+									onclick={() => openLightbox(img)}
+									class="relative overflow-hidden cursor-pointer {message.images.length === 1 ? 'rounded-lg' : 'first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg'}"
+								>
+									<img
+										src={img}
+										alt="Image {i + 1}"
+										class="w-full object-cover {message.images.length === 1 ? 'max-h-64 rounded-lg' : 'h-24'}"
+									/>
+								</button>
+							{/each}
+						</div>
+						{#if message.images.length > 4}
+							<p class="text-[11px] text-muted-foreground">+{message.images.length - 4} more image{message.images.length - 4 > 1 ? 's' : ''}</p>
+						{/if}
+					{/if}
+
+						<!-- Text -->
+						{#if message.content}
+							<p class="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.content}</p>
+						{/if}
 						<span class="text-[10px] text-muted-foreground">{formatTimestamp(message.timestamp)}</span>
 
 						<!-- Hover action buttons -->
@@ -212,7 +298,7 @@
 			{/if}
 		{/each}
 
-		<!-- Typing indicator while waiting for response -->
+		<!-- Typing indicator -->
 		{#if chatStore.isResponding}
 			<div class="flex items-start gap-3">
 				<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary">

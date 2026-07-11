@@ -8,6 +8,7 @@ export interface Message {
 	timestamp: number;
 	replyToId?: string;
 	replyToContent?: string;
+	images?: string[];
 }
 
 export interface Conversation {
@@ -41,7 +42,11 @@ export function loadConversations(): Conversation[] {
 // Persist all conversations to localStorage
 export function saveConversations(conversations: Conversation[]): void {
 	if (typeof localStorage === 'undefined') return;
-	localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+	try {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+	} catch {
+		// Quota exceeded or other localStorage error — silently ignore
+	}
 }
 
 // Load the last active conversation id
@@ -76,14 +81,16 @@ export function addUserMessage(
 	conversation: Conversation,
 	content: string,
 	replyToId?: string,
-	replyToContent?: string
+	replyToContent?: string,
+	images?: string[]
 ): Conversation {
 	const message: Message = {
 		id: uid(),
 		role: 'user',
 		content,
 		timestamp: Date.now(),
-		...(replyToId && replyToContent ? { replyToId, replyToContent } : {})
+		...(replyToId && replyToContent ? { replyToId, replyToContent } : {}),
+		...(images && images.length > 0 ? { images } : {})
 	};
 
 	// Derive a title from the first user message
@@ -103,7 +110,8 @@ export function addAssistantMessage(
 	conversation: Conversation,
 	onComplete: (updated: Conversation) => void,
 	replyToId?: string,
-	replyToContent?: string
+	replyToContent?: string,
+	images?: string[]
 ): void {
 	// Fake streaming delay
 	setTimeout(() => {
@@ -112,7 +120,8 @@ export function addAssistantMessage(
 			role: 'assistant',
 			content: 'Hello! How can I help you today?',
 			timestamp: Date.now(),
-			...(replyToId && replyToContent ? { replyToId, replyToContent } : {})
+			...(replyToId && replyToContent ? { replyToId, replyToContent } : {}),
+			...(images && images.length > 0 ? { images } : {})
 		};
 
 		const updated: Conversation = {

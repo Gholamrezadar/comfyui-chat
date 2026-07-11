@@ -53,8 +53,10 @@ function createChatStore() {
 	}
 
 	// Send a user message in the active conversation
-	function sendMessage(content: string) {
-		if (!content.trim() || isResponding) return;
+	function sendMessage(content: string, images?: string[]) {
+		const hasContent = content.trim().length > 0;
+		const hasImages = images && images.length > 0;
+		if ((!hasContent && !hasImages) || isResponding) return;
 
 		// Auto-create a conversation if none is active
 		let convo = activeConversation;
@@ -70,7 +72,7 @@ function createChatStore() {
 		replyToMessage = null;
 
 		// Add the user message
-		const afterUser = chatService.addUserMessage(convo, content, replyId, replyContent);
+		const afterUser = chatService.addUserMessage(convo, content, replyId, replyContent, images);
 		conversations = conversations.map((c) => (c.id === afterUser.id ? afterUser : c));
 		isResponding = true;
 		persist();
