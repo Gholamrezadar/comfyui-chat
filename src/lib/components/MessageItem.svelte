@@ -103,14 +103,17 @@
 					isUser ? 'self-end text-right' : 'self-start text-left'
 				}`}
 			>
+				<!-- Reply Icon at the start -->
 				{#if !isUser}
 					<Reply class="h-3 w-3 shrink-0" />
 				{/if}
 
+				<!-- Reply Text at the start -->
 				{#if isUser && replyContent}
 					<span class="truncate">{replyContent}</span>
 				{/if}
 
+				<!-- Reply Images -->
 				{#if replyImages.length}
 					<div class="flex items-center gap-1.5">
 						{#each replyImages as img (img)}
@@ -119,10 +122,12 @@
 					</div>
 				{/if}
 
+				<!-- Reply Text at the end --> 
 				{#if !isUser && replyContent}
 					<span class="truncate">{replyContent}</span>
 				{/if}
 
+				<!-- Reply Icon at the end -->
 				{#if isUser}
 					<Reply class="h-3 w-3 shrink-0 scale-x-[-1]" />
 				{/if}
@@ -211,7 +216,7 @@
 		{#if !isEditing}
 			<div class="flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
 				<!-- Timestamp -->
-				<span class="text-[10px] text-muted-foreground">
+				<span class="text-[10px] ml-2 text-muted-foreground">
 					{formatTimestamp(message.timestamp)}
 				</span>
 
