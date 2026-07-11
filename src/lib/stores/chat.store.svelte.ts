@@ -20,22 +20,16 @@ function createChatStore() {
 		chatService.searchConversations(conversations, searchQuery)
 	);
 
-	// Bootstrap from localStorage on first load
-	function init() {
-		conversations = chatService.loadConversations();
-		const savedId = chatService.loadActiveId();
+	// Bootstrap from IndexedDB on first load
+	async function init() {
+		conversations = await chatService.loadConversations();
+		const savedId = await chatService.loadActiveId();
 		// Only restore if that conversation still exists
 		if (savedId && conversations.some((c) => c.id === savedId)) {
 			activeId = savedId;
 		}
 
-		isSidebarOpen = chatService.loadSidebarState();
-	}
-
-	// Persist helpers called after every mutation
-	function persist() {
-		chatService.saveConversations(conversations);
-		chatService.saveActiveId(activeId);
+		isSidebarOpen = await chatService.loadSidebarState();
 	}
 
 	// Select or deselect a conversation
@@ -49,7 +43,8 @@ function createChatStore() {
 		const convo = chatService.createConversation();
 		conversations = [convo, ...conversations];
 		activeId = convo.id;
-		persist();
+		chatService.saveConversation($state.snapshot(convo));
+		chatService.saveActiveId(convo.id);
 	}
 
 	// Send a user message in the active conversation
@@ -64,6 +59,7 @@ function createChatStore() {
 			convo = chatService.createConversation();
 			conversations = [convo, ...conversations];
 			activeId = convo.id;
+			chatService.saveActiveId(convo.id);
 		}
 
 		// Capture reply context before clearing
@@ -71,11 +67,17 @@ function createChatStore() {
 		const replyContent = replyToMessage?.content;
 		replyToMessage = null;
 
-		// Add the user message
-		const afterUser = chatService.addUserMessage(convo, content, replyId, replyContent, images);
+		// Add the user message (snapshot the proxied conversation before mutating it)
+		const afterUser = chatService.addUserMessage(
+			$state.snapshot(convo),
+			content,
+			replyId,
+			replyContent,
+			images
+		);
 		conversations = conversations.map((c) => (c.id === afterUser.id ? afterUser : c));
 		isResponding = true;
-		persist();
+		chatService.saveConversation(afterUser);
 
 		// Assistant replies to the user message we just sent
 		const newUserMsg = afterUser.messages[afterUser.messages.length - 1];
@@ -88,20 +90,43 @@ function createChatStore() {
 					c.id === afterAssistant.id ? afterAssistant : c
 				);
 				isResponding = false;
-				persist();
+				chatService.saveConversation(afterAssistant);
 			},
 			newUserMsg.id,
 			newUserMsg.content
 		);
 	}
 
+	// Edit a message's content
+	function editMessage(messageId: string, newContent: string) {
+		let convo = activeConversation;
+		if (!convo) return;
+
+		const updated = chatService.editMessage($state.snapshot(convo), messageId, newContent);
+		conversations = conversations.map((c) => (c.id === updated.id ? updated : c));
+		editingMessage = null;
+		chatService.saveConversation(updated);
+	}
+
+	// Delete a message
+	function deleteMessage(messageId: string) {
+		let convo = activeConversation;
+		if (!convo) return;
+
+		const updated = chatService.deleteMessage($state.snapshot(convo), messageId);
+		conversations = conversations.map((c) => (c.id === updated.id ? updated : c));
+		chatService.saveConversation(updated);
+	}
+
+	
+
 	// Delete a conversation; deselect if it was active
-	function deleteConversation(id: string) {
-		conversations = chatService.deleteConversation(conversations, id);
+	async function deleteConversation(id: string) {
+		conversations = await chatService.deleteConversation(conversations, id);
 		if (activeId === id) {
 			activeId = conversations[0]?.id ?? null;
+			chatService.saveActiveId(activeId);
 		}
-		persist();
 	}
 
 	// Update the search query
@@ -110,6 +135,7 @@ function createChatStore() {
 	}
 
 	function saveSidebarState(isOpen: boolean) {
+		isSidebarOpen = isOpen;
 		chatService.saveSidebarState(isOpen);
 	}
 
@@ -133,27 +159,6 @@ function createChatStore() {
 	// Cancel the current edit
 	function cancelEdit() {
 		editingMessage = null;
-	}
-
-	// Edit a message's content
-	function editMessage(messageId: string, newContent: string) {
-		let convo = activeConversation;
-		if (!convo) return;
-
-		const updated = chatService.editMessage(convo, messageId, newContent);
-		conversations = conversations.map((c) => (c.id === updated.id ? updated : c));
-		editingMessage = null;
-		persist();
-	}
-
-	// Delete a message
-	function deleteMessage(messageId: string) {
-		let convo = activeConversation;
-		if (!convo) return;
-
-		const updated = chatService.deleteMessage(convo, messageId);
-		conversations = conversations.map((c) => (c.id === updated.id ? updated : c));
-		persist();
 	}
 
 	return {

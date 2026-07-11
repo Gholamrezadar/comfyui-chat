@@ -8,10 +8,10 @@
 	let sidebarCollapsed = $state(false);
 	let loaded = $state(false);
 
-	// Bootstrap stores on mount (client-only, localStorage access)
-	onMount(() => {
+	// Bootstrap stores on mount (client-only, IndexedDB access)
+	onMount(async () => {
 		themeStore.init();
-		chatStore.init();
+		await chatStore.init();
 		sidebarCollapsed = !chatStore.isSidebarOpen;
 		loaded = true;
 	});
@@ -22,7 +22,7 @@
 	<div class="flex h-screen w-screen overflow-hidden bg-background text-foreground antialiased">
 		<!-- Sidebar -->
 		<Sidebar bind:collapsed={sidebarCollapsed} />
-	
+
 		<!-- Main Chat Area -->
 		<main class="flex flex-1 min-w-0 flex-col overflow-hidden">
 			<ChatView />

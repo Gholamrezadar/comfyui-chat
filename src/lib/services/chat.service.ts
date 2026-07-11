@@ -1,3 +1,5 @@
+import Dexie, { type Table } from 'dexie';
+
 // Types for the chat domain
 export type Role = 'user' | 'assistant';
 
@@ -19,49 +21,66 @@ export interface Conversation {
 	updatedAt: number;
 }
 
-const STORAGE_KEY = 'comfyui-chat-conversations';
-const ACTIVE_KEY = 'comfyui-chat-active-id';
-const SIDEBAR_KEY = 'comfyui-chat-sidebar-open';
+interface MetaEntry {
+	key: string;
+	value: unknown;
+}
+
+// One row per conversation (messages embedded as before), plus a small key/value meta table
+class ChatDatabase extends Dexie {
+	conversations!: Table<Conversation, string>;
+	meta!: Table<MetaEntry, string>;
+
+	constructor() {
+		super('comfyui-chat');
+		this.version(1).stores({
+			conversations: 'id, updatedAt',
+			meta: 'key'
+		});
+	}
+}
+
+const db = new ChatDatabase();
+
+const ACTIVE_KEY = 'activeId';
+const SIDEBAR_KEY = 'sidebarOpen';
 
 // Generate a simple unique id
 function uid(): string {
 	return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-// Load all conversations from localStorage
-export function loadConversations(): Conversation[] {
-	if (typeof localStorage === 'undefined') return [];
+// Load all conversations, newest first
+export async function loadConversations(): Promise<Conversation[]> {
 	try {
-		const raw = localStorage.getItem(STORAGE_KEY);
-		return raw ? JSON.parse(raw) : [];
+		const all = await db.conversations.toArray();
+		return all.sort((a, b) => b.updatedAt - a.updatedAt);
 	} catch {
 		return [];
 	}
 }
 
-// Persist all conversations to localStorage
-export function saveConversations(conversations: Conversation[]): void {
-	if (typeof localStorage === 'undefined') return;
+// Persist a single conversation, insert or update
+export async function saveConversation(conversation: Conversation): Promise<void> {
 	try {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+		await db.conversations.put(conversation);
 	} catch {
-		// Quota exceeded or other localStorage error — silently ignore
+		// Quota exceeded or other IndexedDB error, silently ignore
 	}
 }
 
 // Load the last active conversation id
-export function loadActiveId(): string | null {
-	if (typeof localStorage === 'undefined') return null;
-	return localStorage.getItem(ACTIVE_KEY);
+export async function loadActiveId(): Promise<string | null> {
+	const entry = await db.meta.get(ACTIVE_KEY);
+	return (entry?.value as string) ?? null;
 }
 
 // Persist the active conversation id
-export function saveActiveId(id: string | null): void {
-	if (typeof localStorage === 'undefined') return;
+export async function saveActiveId(id: string | null): Promise<void> {
 	if (id === null) {
-		localStorage.removeItem(ACTIVE_KEY);
+		await db.meta.delete(ACTIVE_KEY);
 	} else {
-		localStorage.setItem(ACTIVE_KEY, id);
+		await db.meta.put({ key: ACTIVE_KEY, value: id });
 	}
 }
 
@@ -150,10 +169,7 @@ export function editMessage(
 }
 
 // Delete a message and return the updated conversation
-export function deleteMessage(
-	conversation: Conversation,
-	messageId: string
-): Conversation {
+export function deleteMessage(conversation: Conversation, messageId: string): Conversation {
 	return {
 		...conversation,
 		messages: conversation.messages.filter((m) => m.id !== messageId),
@@ -161,11 +177,16 @@ export function deleteMessage(
 	};
 }
 
-// Delete a conversation by id, returns the new list
-export function deleteConversation(
+// Delete a conversation by id, both from the database and the given in-memory list
+export async function deleteConversation(
 	conversations: Conversation[],
 	id: string
-): Conversation[] {
+): Promise<Conversation[]> {
+	try {
+		await db.conversations.delete(id);
+	} catch {
+		// Ignore, conversation may already be gone
+	}
 	return conversations.filter((c) => c.id !== id);
 }
 
@@ -183,17 +204,11 @@ export function searchConversations(
 	);
 }
 
-
-export function saveSidebarState(isOpen: boolean) {
-	if (typeof localStorage === 'undefined') return;
-	localStorage.setItem(SIDEBAR_KEY, isOpen.toString());
+export async function saveSidebarState(isOpen: boolean): Promise<void> {
+	await db.meta.put({ key: SIDEBAR_KEY, value: isOpen });
 }
 
-export function loadSidebarState(): boolean {
-	if (typeof localStorage === 'undefined') return false;
-
-	const value = localStorage.getItem(SIDEBAR_KEY);
-	if (value === null) return false;
-
-	return value === 'true';
+export async function loadSidebarState(): Promise<boolean> {
+	const entry = await db.meta.get(SIDEBAR_KEY);
+	return (entry?.value as boolean) ?? false;
 }
