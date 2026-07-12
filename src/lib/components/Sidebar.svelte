@@ -5,6 +5,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
+	import { tick } from 'svelte';
 	import {
 		MessageSquarePlus,
 		Search,
@@ -30,11 +31,49 @@
 
 	let showSearch = $state(false);
 	let searchInput = $state('');
+	let searchInputEl: HTMLInputElement | null = $state(null);
 
 	// Sync search query with the store
 	$effect(() => {
 		chatStore.setSearchQuery(searchInput);
 	});
+
+	function focusSearchInput() {
+		tick().then(() => {
+			requestAnimationFrame(() => {
+				searchInputEl?.focus();
+			});
+		});
+	}
+
+	function toggleSidebar() {
+		collapsed = !collapsed;
+		chatStore.saveSidebarState(!collapsed);
+	}
+
+	function handleKeydown(e: KeyboardEvent) {
+		const ctrl = e.ctrlKey || e.metaKey;
+		const shift = e.shiftKey;
+		const key = e.key.toLowerCase();
+
+		if (ctrl && shift && key === 'o') {
+			e.preventDefault();
+			chatStore.newConversation();
+		} else if (ctrl && shift && key === 's') {
+			e.preventDefault();
+		} else if (ctrl && shift && key === 'h') {
+			e.preventDefault();
+			themeStore.toggle();
+		} else if (ctrl && key === 'k') {
+			e.preventDefault();
+			if (collapsed) collapsed = false;
+			showSearch = true;
+			focusSearchInput();
+		} else if (ctrl && key === '/') {
+			e.preventDefault();
+			toggleSidebar();
+		}
+	}
 
 	function handleSelectConvo(id: string) {
 		chatStore.selectConversation(id);
@@ -58,6 +97,7 @@
 </script>
 
 <!-- Sidebar Container -->
+<svelte:window onkeydown={handleKeydown} />
 <aside
 	class="top-0 left-0 z-50 flex h-full flex-col border-r border-border bg-sidebar transition-all duration-0 ease-in-out md:relative md:h-full"
 	class:w-full={!collapsed}
@@ -67,10 +107,7 @@
 >
 	<!-- Sidebar Toggle Button -->
 	<button
-		onclick={() => {
-			collapsed = !collapsed;
-			chatStore.saveSidebarState(!collapsed);
-			}}
+		onclick={toggleSidebar}
 		class="absolute top-3 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-accent"
 		class:right-3={!collapsed}
 		class:left-3={collapsed}
@@ -154,7 +191,7 @@
 					variant="ghost"
 					size="sm"
 					class="w-full justify-start gap-2 text-sm cursor-pointer"
-					onclick={() => (showSearch = !showSearch)}
+					onclick={() => { showSearch = !showSearch; if (showSearch) focusSearchInput(); }}
 				>
 					<Search class="h-4 w-4 shrink-0" />
 					Search
@@ -165,6 +202,7 @@
 			{#if showSearch}
 				<div class="mt-1">
 					<Input
+						bind:ref={searchInputEl}
 						bind:value={searchInput}
 						placeholder="Search conversations..."
 						class="h-8 text-sm"
