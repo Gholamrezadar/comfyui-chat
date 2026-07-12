@@ -16,6 +16,7 @@
 		Trash2,
 		Bot,
 		PanelLeft,
+		ImageIcon,
 		Plus
 	} from 'lucide-svelte';
 
@@ -86,6 +87,22 @@
 		if (diffDays === 1) return 'Yesterday';
 		if (diffDays < 7) return `${diffDays}d ago`;
 		return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+	}
+
+	function getLastImage(convo: { messages: { images?: string[] }[] }): string | undefined {
+		for (let i = convo.messages.length - 1; i >= 0; i--) {
+			const imgs = convo.messages[i].images;
+			if (imgs && imgs.length > 0) return imgs[imgs.length - 1];
+		}
+		return undefined;
+	}
+
+	function countImages(convo: { messages: { images?: string[] }[] }): number {
+		let count = 0;
+		for (const msg of convo.messages) {
+			if (msg.images) count += msg.images.length;
+		}
+		return count;
 	}
 </script>
 
@@ -219,15 +236,23 @@
 									onclick={() => handleSelectConvo(convo.id)}
 									class="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer"
 								>
-									<!-- <MessageSquare class="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> -->
+									{#if getLastImage(convo)}
+										<img src={getLastImage(convo)} alt="" class="h-7 w-7 shrink-0 rounded-md object-cover" />
+									{/if}
 
 									<div class="min-w-0 flex-1">
 										<p class="truncate text-xs leading-tight font-medium">
 											{convo.title}
 										</p>
 
-										<p class="text-[10px] text-muted-foreground">
+										<p class="flex items-center gap-1 text-[10px] text-muted-foreground">
 											{formatTime(convo.updatedAt)}
+											{#if countImages(convo) > 0}
+												<span class="inline-flex items-center gap-0.5">
+												<span class="leading-none">{countImages(convo)}</span>
+													<ImageIcon class="h-2.5 w-2.5" />
+												</span>
+											{/if}
 										</p>
 									</div>
 								</button>
