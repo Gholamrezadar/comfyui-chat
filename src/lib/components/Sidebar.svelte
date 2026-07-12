@@ -22,7 +22,6 @@
 	// Props
 	let { collapsed = $bindable(false) }: { collapsed: boolean } = $props();
 
-	let showSearch = $state(false);
 	let searchInput = $state('');
 	let searchInputEl: HTMLInputElement | null = $state(null);
 	let showSettings = $state(false);
@@ -62,7 +61,6 @@
 		} else if (ctrl && key === 'k') {
 			e.preventDefault();
 			if (collapsed) collapsed = false;
-			showSearch = true;
 			focusSearchInput();
 		} else if (ctrl && key === '/') {
 			e.preventDefault();
@@ -158,7 +156,7 @@
 						size="icon"
 						onclick={() => {
 							collapsed = false;
-							showSearch = true;
+							focusSearchInput();
 						}}
 						class="h-9 w-9 cursor-pointer"
 						aria-label="Search"
@@ -180,30 +178,15 @@
 				New Chat
 			</Button>
 
-			<!-- Search Row -->
-			<div class="mt-1">
-				<Button
-					variant="ghost"
-					size="sm"
-					class="w-full justify-start gap-2 text-sm cursor-pointer"
-					onclick={() => { showSearch = !showSearch; if (showSearch) focusSearchInput(); }}
-				>
-					<Search class="h-4 w-4 shrink-0" />
-					Search
-				</Button>
-			</div>
-
 			<!-- Search Input -->
-			{#if showSearch}
-				<div class="mt-1">
-					<Input
-						bind:ref={searchInputEl}
-						bind:value={searchInput}
-						placeholder="Search conversations..."
-						class="h-8 text-sm"
-					/>
-				</div>
-			{/if}
+			<div class="mt-1">
+				<Input
+					bind:ref={searchInputEl}
+					bind:value={searchInput}
+					placeholder="Search conversations..."
+					class="h-8 text-sm focus-visible:ring-0 focus-visible:border-input focus-visible:bg-input/50"
+				/>
+			</div>
 		{/if}
 	</div>
 
@@ -211,9 +194,9 @@
 	{#if !collapsed}
 		<div class="mt-4 min-h-0 flex-1">
 			<!-- Recent Header -->
-			<!-- <p class="px-4 pb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
-				Recent
-			</p> -->
+			<p class="px-4 pb-1 text-xs font-light tracking-wider text-muted-foreground">
+				Recents
+			</p>
 			<!-- Conversation Scroll Area -->
 			<ScrollArea class="h-full px-2">
 				{#if chatStore.filteredConversations.length === 0}
