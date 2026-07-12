@@ -15,8 +15,13 @@
 		Trash2,
 		MessageSquare,
 		Bot,
+		PanelLeft,
 
-		PanelLeft
+		PlusCircleIcon,
+
+		Plus
+
+
 
 	} from 'lucide-svelte';
 
@@ -84,10 +89,9 @@
 		{#if !collapsed}
 			<!-- Expanded Brand -->
 			<div class="flex min-w-0 flex-1 items-center gap-2">
-				<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary">
-					<Bot class="h-4 w-4 text-primary-foreground" />
-				</div>
-				<span class="truncate text-sm font-semibold text-foreground">LLM Chat</span>
+				<span class="flex h-7 items-center justify-center truncate text-sm font-semibold text-foreground">
+					ComfyUI Chat
+				</span>
 			</div>
 		{:else}
 			<!-- Collapsed Brand Spacer -->
@@ -108,12 +112,11 @@
 						size="icon"
 						onclick={() => chatStore.newConversation()}
 						class="h-9 w-9 cursor-pointer"
-						// aria-label="New chat"
 					>
-						<MessageSquarePlus class="h-4 w-4" />
+						<Plus class="h-4 w-4" />
 					</Button>
 				</TooltipTrigger>
-				<TooltipContent side="right">New Chat</TooltipContent>
+				<TooltipContent side="right">New Chat <span class="text-muted-foreground">Ctrl + Shift + O</span> </TooltipContent>
 			</Tooltip>
 
 			<Tooltip>
@@ -131,41 +134,30 @@
 						<Search class="h-4 w-4" />
 					</Button>
 				</TooltipTrigger>
-				<TooltipContent side="right">Search</TooltipContent>
+				<TooltipContent side="right">Search <span class="text-muted-foreground">Ctrl + K</span> </TooltipContent>
 			</Tooltip>
 
-			<Tooltip>
-				<TooltipTrigger>
-					<Button variant="ghost" size="icon" class="h-9 w-9 cursor-pointer" aria-label="Settings">
-						<Settings class="h-4 w-4" />
-					</Button>
-				</TooltipTrigger>
-				<TooltipContent side="right">Settings</TooltipContent>
-			</Tooltip>
 		{:else}
 			<!-- Expanded Actions -->
 			<Button
-				variant="default"
+				variant="ghost"
 				class="h-9 w-full justify-start gap-2 text-sm cursor-pointer"
 				onclick={() => chatStore.newConversation()}
 			>
-				<MessageSquarePlus class="h-4 w-4 shrink-0" />
+				<Plus class="h-4 w-4 shrink-0" />
 				New Chat
 			</Button>
 
-			<!-- Search/Settings Row -->
-			<div class="mt-1 flex gap-1">
+			<!-- Search Row -->
+			<div class="mt-1">
 				<Button
 					variant="ghost"
 					size="sm"
-					class="flex-1 justify-start gap-2 text-sm cursor-pointer"
+					class="w-full justify-start gap-2 text-sm cursor-pointer"
 					onclick={() => (showSearch = !showSearch)}
 				>
 					<Search class="h-4 w-4 shrink-0" />
 					Search
-				</Button>
-				<Button variant="ghost" size="icon" class="h-8 w-8 shrink-0 cursor-pointer" aria-label="Settings">
-					<Settings class="h-4 w-4" />
 				</Button>
 			</div>
 
@@ -186,9 +178,9 @@
 	{#if !collapsed}
 		<div class="mt-4 min-h-0 flex-1">
 			<!-- Recent Header -->
-			<p class="px-4 pb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
+			<!-- <p class="px-4 pb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
 				Recent
-			</p>
+			</p> -->
 			<!-- Conversation Scroll Area -->
 			<ScrollArea class="h-full px-2">
 				{#if chatStore.filteredConversations.length === 0}
@@ -211,7 +203,7 @@
 									onclick={() => handleSelectConvo(convo.id)}
 									class="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer"
 								>
-									<MessageSquare class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+									<!-- <MessageSquare class="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> -->
 
 									<div class="min-w-0 flex-1">
 										<p class="truncate text-xs leading-tight font-medium">
@@ -245,12 +237,12 @@
 
 	<!-- Sidebar Footer -->
 	<div
-		class="z-20 flex flex-col gap-2 border-t border-border bg-sidebar p-2"
+		class="z-20 flex flex-col gap-2 border-none border-border bg-sidebar p-2"
 		class:items-center={collapsed}
 		class:border-none={collapsed}
 	>
-		<!-- Collapsed Theme Toggle -->
 		{#if collapsed}
+			<!-- Collapsed Theme Toggle -->
 			<Tooltip>
 				<TooltipTrigger>
 					<Button
@@ -267,43 +259,43 @@
 						{/if}
 					</Button>
 				</TooltipTrigger>
-				<TooltipContent side="right"
-					>{themeStore.isDark ? 'Light mode' : 'Dark mode'}</TooltipContent
-				>
+				<TooltipContent side="right">
+					{themeStore.isDark ? 'Light mode' : 'Dark mode'}
+						<span class="text-muted-foreground">Ctrl + Shift + H</span>
+					</TooltipContent>
 			</Tooltip>
-		{/if}
 
-		<!-- Profile Card -->
-		<div
-			class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent"
-			class:justify-center={collapsed}
-		>
-			<div
-				class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-sidebar-border bg-linear-to-br from-zinc-900 to-zinc-950 text-xs font-bold text-white"
-			>
-				U
-			</div>
-			{#if !collapsed}
-				<!-- Profile Text -->
-				<div class="min-w-0 flex-1">
-					<p class="truncate text-xs font-medium">User</p>
-					<p class="truncate text-[10px] text-muted-foreground">user@example.com</p>
-				</div>
-				<!-- Expanded Theme Toggle -->
+			<!-- Collapsed Settings -->
+			<Tooltip>
+				<TooltipTrigger>
+					<Button variant="ghost" size="icon" class="h-9 w-9 cursor-pointer" aria-label="Settings">
+						<Settings class="h-4 w-4" />
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent side="right">Settings
+						<span class="text-muted-foreground">Ctrl + Shift + S</span>
+				</TooltipContent>
+			</Tooltip>
+		{:else}
+			<!-- Expanded Settings & Theme Row -->
+			<div class="flex items-center justify-between px-2 py-1.5">
+				<Button variant="ghost" size="icon" class="h-9 w-9 shrink-0 cursor-pointer" aria-label="Settings">
+					<Settings class="h-4 w-4" />
+				</Button>
 				<Button
 					variant="ghost"
 					size="icon"
 					onclick={() => themeStore.toggle()}
-					class="h-7 w-7 shrink-0 cursor-pointer"
+					class="h-9 w-9 shrink-0 cursor-pointer"
 					aria-label="Toggle theme"
 				>
 					{#if themeStore.isDark}
-						<Sun class="h-3.5 w-3.5" />
+						<Sun class="h-4 w-4" />
 					{:else}
-						<Moon class="h-3.5 w-3.5" />
+						<Moon class="h-4 w-4" />
 					{/if}
 				</Button>
-			{/if}
-		</div>
+			</div>
+		{/if}
 	</div>
 </aside>
