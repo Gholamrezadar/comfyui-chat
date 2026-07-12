@@ -5,25 +5,18 @@
 	import { Input } from '$lib/components/ui/input';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
+	import SettingsModal from '$lib/components/Settings.svelte';
 	import { tick } from 'svelte';
 	import {
-		MessageSquarePlus,
 		Search,
 		Settings,
 		ChevronLeft,
 		Sun,
 		Moon,
 		Trash2,
-		MessageSquare,
 		Bot,
 		PanelLeft,
-
-		PlusCircleIcon,
-
 		Plus
-
-
-
 	} from 'lucide-svelte';
 
 	// Props
@@ -32,6 +25,7 @@
 	let showSearch = $state(false);
 	let searchInput = $state('');
 	let searchInputEl: HTMLInputElement | null = $state(null);
+	let showSettings = $state(false);
 
 	// Sync search query with the store
 	$effect(() => {
@@ -61,6 +55,7 @@
 			chatStore.newConversation();
 		} else if (ctrl && shift && key === 's') {
 			e.preventDefault();
+			showSettings = true;
 		} else if (ctrl && shift && key === 'h') {
 			e.preventDefault();
 			themeStore.toggle();
@@ -306,7 +301,7 @@
 			<!-- Collapsed Settings -->
 			<Tooltip>
 				<TooltipTrigger>
-					<Button variant="ghost" size="icon" class="h-9 w-9 cursor-pointer" aria-label="Settings">
+					<Button variant="ghost" size="icon" class="h-9 w-9 cursor-pointer" aria-label="Settings" onclick={() => (showSettings = true)}>
 						<Settings class="h-4 w-4" />
 					</Button>
 				</TooltipTrigger>
@@ -317,7 +312,7 @@
 		{:else}
 			<!-- Expanded Settings & Theme Row -->
 			<div class="flex items-center justify-between px-2 py-1.5">
-				<Button variant="ghost" size="icon" class="h-9 w-9 shrink-0 cursor-pointer" aria-label="Settings">
+				<Button variant="ghost" size="icon" class="h-9 w-9 shrink-0 cursor-pointer" aria-label="Settings" onclick={() => (showSettings = true)}>
 					<Settings class="h-4 w-4" />
 				</Button>
 				<Button
@@ -337,3 +332,5 @@
 		{/if}
 	</div>
 </aside>
+
+<SettingsModal bind:open={showSettings} />
