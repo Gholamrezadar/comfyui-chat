@@ -3,6 +3,8 @@
 	import type { Message } from '$lib/services/chat.service';
 	import { Reply, Pencil, Trash2, X, Check } from 'lucide-svelte';
 	import { tick } from 'svelte';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 
 	let {
 		message,
@@ -20,6 +22,7 @@
 
 	let editContent = $state('');
 	let editTextareaEl: HTMLTextAreaElement | undefined = $state();
+	let showDeleteConfirm = $state(false);
 
 	const isUser = $derived(message.role === 'user');
 	const isEditing = $derived(chatStore.editingMessage?.id === message.id);
@@ -90,16 +93,12 @@
 	data-message-id={message.id}
 >
 	<!-- Message Stack -->
-	<div
-		class={isUser
-			? 'flex flex-col items-end gap-2'
-			: 'flex flex-col gap-1 min-w-0'}
-	>
+	<div class={isUser ? 'flex flex-col items-end gap-2' : 'flex min-w-0 flex-col gap-1'}>
 		<!-- Reply Preview -->
 		{#if message.replyToId}
 			<button
 				onclick={() => scrollToMessage(message.replyToId!)}
-				class={`flex w-fit max-w-[280px] items-center gap-1.5 rounded-none border-0 bg-transparent px-0 py-0 text-[11px] text-muted-foreground cursor-pointer transition-colors hover:text-foreground ${
+				class={`flex w-fit max-w-[280px] cursor-pointer items-center gap-1.5 rounded-none border-0 bg-transparent px-0 py-0 text-[11px] text-muted-foreground transition-colors hover:text-foreground ${
 					isUser ? 'self-end text-right' : 'self-start text-left'
 				}`}
 				tabindex={-1}
@@ -123,7 +122,7 @@
 					</div>
 				{/if}
 
-				<!-- Reply Text at the end --> 
+				<!-- Reply Text at the end -->
 				{#if !isUser && replyContent}
 					<span class="truncate">{replyContent}</span>
 				{/if}
@@ -151,14 +150,14 @@
 				<div class="mt-1.5 flex items-center justify-end gap-1">
 					<button
 						onclick={cancelEdit}
-						class="rounded p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+						class="cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground"
 						tabindex={0}
 					>
 						<X class="h-3.5 w-3.5" />
 					</button>
 					<button
 						onclick={confirmEdit}
-						class="rounded p-1 text-muted-foreground hover:text-primary cursor-pointer"
+						class="cursor-pointer rounded p-1 text-muted-foreground hover:text-primary"
 						tabindex={0}
 					>
 						<Check class="h-3.5 w-3.5" />
@@ -184,13 +183,17 @@
 						{#each visibleImages as img, i}
 							<button
 								onclick={() => openLightbox(img)}
-								class="relative block overflow-hidden cursor-pointer {visibleImages.length === 1 ? 'rounded-lg' : 'first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg'}"
+								class="relative block cursor-pointer overflow-hidden {visibleImages.length === 1
+									? 'rounded-lg'
+									: 'first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg'}"
 								tabindex={-1}
 							>
 								<img
 									src={img}
 									alt={isUser ? `Uploaded image ${i + 1}` : `Image ${i + 1}`}
-									class="block w-full object-cover {visibleImages.length === 1 ? 'max-h-64 rounded-lg' : 'h-24'}"
+									class="block w-full object-cover {visibleImages.length === 1
+										? 'max-h-64 rounded-lg'
+										: 'h-24'}"
 								/>
 							</button>
 						{/each}
@@ -205,10 +208,8 @@
 				<!-- Message Text -->
 				{#if message.content}
 					<p
-						class={`whitespace-pre-wrap text-sm leading-relaxed ${
-							isUser
-								? message.images?.length ? 'px-3 py-1.5' : ''
-								: 'text-foreground'
+						class={`text-sm leading-relaxed whitespace-pre-wrap ${
+							isUser ? (message.images?.length ? 'px-3 py-1.5' : '') : 'text-foreground'
 						}`}
 					>
 						{message.content}
@@ -221,14 +222,14 @@
 		{#if !isEditing}
 			<div class="flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
 				<!-- Timestamp -->
-				<span class="text-[10px] ml-2 text-muted-foreground">
+				<span class="ml-2 text-[10px] text-muted-foreground">
 					{formatTimestamp(message.timestamp)}
 				</span>
 
 				<!-- Reply Button -->
 				<button
 					onclick={() => chatStore.setReplyTo(message)}
-					class="rounded p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+					class="cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground"
 					aria-label="Reply"
 					tabindex="-1"
 				>
@@ -239,7 +240,7 @@
 				{#if isUser}
 					<button
 						onclick={startEdit}
-						class="rounded p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+						class="cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground"
 						aria-label="Edit"
 						tabindex="-1"
 					>
@@ -249,8 +250,8 @@
 
 				<!-- Delete Button -->
 				<button
-					onclick={() => chatStore.deleteMessage(message.id)}
-					class="rounded p-1 text-muted-foreground hover:text-destructive cursor-pointer"
+					onclick={() => (showDeleteConfirm = true)}
+					class="cursor-pointer rounded p-1 text-muted-foreground hover:text-destructive"
 					aria-label="Delete"
 					tabindex="-1"
 				>
@@ -260,3 +261,10 @@
 		{/if}
 	</div>
 </div>
+
+<ConfirmDialog
+	bind:open={showDeleteConfirm}
+	title="Delete Message"
+	message="Are you sure you want to delete this message? This action cannot be undone."
+	onconfirm={() => chatStore.deleteMessage(message.id)}
+/>

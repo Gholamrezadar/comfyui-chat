@@ -7,6 +7,7 @@
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 	import SettingsModal from '$lib/components/Settings.svelte';
 	import ShortcutsModal from '$lib/components/ShortcutsModal.svelte';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import { shortcuts, matchesShortcut, formatShortcut } from '$lib/shortcuts';
 	import { tick } from 'svelte';
 	import {
@@ -29,6 +30,8 @@
 	let searchInputEl: HTMLInputElement | null = $state(null);
 	let showSettings = $state(false);
 	let showShortcuts = $state(false);
+	let showDeleteConfirm = $state(false);
+	let deleteTargetId = $state('');
 
 	// Sync search query with the store
 	$effect(() => {
@@ -83,7 +86,8 @@
 
 	function handleDeleteConvo(e: MouseEvent, id: string) {
 		e.stopPropagation();
-		chatStore.deleteConversation(id);
+		deleteTargetId = id;
+		showDeleteConfirm = true;
 	}
 
 	function formatTime(ts: number): string {
@@ -366,3 +370,9 @@
 
 <SettingsModal bind:open={showSettings} />
 <ShortcutsModal bind:open={showShortcuts} />
+<ConfirmDialog
+	bind:open={showDeleteConfirm}
+	title="Delete Chat"
+	message="Are you sure you want to delete this chat? This action cannot be undone."
+	onconfirm={() => chatStore.deleteConversation(deleteTargetId)}
+/>

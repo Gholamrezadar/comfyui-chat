@@ -6,6 +6,7 @@
 	import { workflowStore } from '$lib/stores/workflow.store.svelte';
 	import { X, Plus, Trash2 } from 'lucide-svelte';
 	import type { Workflow } from '$lib/services/workflow.service';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
 	let { open = $bindable(false) }: { open: boolean } = $props();
 
@@ -14,6 +15,7 @@
 	let editBaseUrl = $state('');
 	let editWorkflowText = $state('');
 	let errors = $state<{ name?: string; base_url?: string; workflow?: string }>({});
+	let showDeleteConfirm = $state(false);
 
 	// When a workflow is selected, load it into the editor fields
 	$effect(() => {
@@ -84,16 +86,8 @@
 		});
 	}
 
-	async function handleDelete() {
-		const id = workflowStore.activeId;
-		if (!id) return;
-		await workflowStore.deleteWorkflow(id);
-		const next = workflowStore.activeWorkflow;
-		if (next) {
-			editName = next.name;
-			editBaseUrl = next.base_url;
-			editWorkflowText = next.workflow;
-		}
+	function handleDelete() {
+		showDeleteConfirm = true;
 	}
 
 	// Block switching to another workflow if the current one has unsaved changes
@@ -299,3 +293,20 @@
 		</div>
 	</div>
 {/if}
+
+<ConfirmDialog
+	bind:open={showDeleteConfirm}
+	title="Delete Workflow"
+	message="Are you sure you want to delete this workflow? This action cannot be undone."
+	onconfirm={async () => {
+		const id = workflowStore.activeId;
+		if (!id) return;
+		await workflowStore.deleteWorkflow(id);
+		const next = workflowStore.activeWorkflow;
+		if (next) {
+			editName = next.name;
+			editBaseUrl = next.base_url;
+			editWorkflowText = next.workflow;
+		}
+	}}
+/>
