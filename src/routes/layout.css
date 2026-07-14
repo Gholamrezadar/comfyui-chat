@@ -132,6 +132,25 @@
 	}
 }
 
+/* Global scrollbar: thin, hidden by default, visible on hover */
+* {
+	&::-webkit-scrollbar {
+		width: 6px;
+	}
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	&::-webkit-scrollbar-thumb {
+		border-radius: 9999px;
+		background: var(--color-border);
+		opacity: 0;
+		transition: opacity 0.15s;
+	}
+	&:hover::-webkit-scrollbar-thumb {
+		opacity: 1;
+	}
+}
+
 /* View Transition Theme Switch A->B */
 /* src: https://theme-toggle.rdsx.dev/ */
 

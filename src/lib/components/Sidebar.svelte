@@ -11,8 +11,6 @@
 		Search,
 		Settings,
 		ChevronLeft,
-		Sun,
-		Moon,
 		Trash2,
 		Bot,
 		PanelLeft,
@@ -283,29 +281,6 @@
 		class:border-none={collapsed}
 	>
 		{#if collapsed}
-			<!-- Collapsed Theme Toggle -->
-			<Tooltip>
-				<TooltipTrigger>
-					<Button
-						variant="ghost"
-						size="icon"
-						onclick={() => themeStore.toggle()}
-						class="h-9 w-9 cursor-pointer"
-						aria-label="Toggle theme"
-					>
-						{#if themeStore.isDark}
-							<Sun class="h-4 w-4" />
-						{:else}
-							<Moon class="h-4 w-4" />
-						{/if}
-					</Button>
-				</TooltipTrigger>
-				<TooltipContent side="right">
-					{themeStore.isDark ? 'Light mode' : 'Dark mode'}
-						<span class="text-muted-foreground">Ctrl + Shift + H</span>
-					</TooltipContent>
-			</Tooltip>
-
 			<!-- Collapsed Settings -->
 			<Tooltip>
 				<TooltipTrigger>
@@ -318,23 +293,10 @@
 				</TooltipContent>
 			</Tooltip>
 		{:else}
-			<!-- Expanded Settings & Theme Row -->
+			<!-- Expanded Settings -->
 			<div class="flex items-center justify-between px-2 py-1.5">
 				<Button variant="ghost" size="icon" class="h-9 w-9 shrink-0 cursor-pointer" aria-label="Settings" onclick={() => (showSettings = true)}>
 					<Settings class="h-4 w-4" />
-				</Button>
-				<Button
-					variant="ghost"
-					size="icon"
-					onclick={() => themeStore.toggle()}
-					class="h-9 w-9 shrink-0 cursor-pointer"
-					aria-label="Toggle theme"
-				>
-					{#if themeStore.isDark}
-						<Sun class="h-4 w-4" />
-					{:else}
-						<Moon class="h-4 w-4" />
-					{/if}
 				</Button>
 			</div>
 		{/if}

@@ -6,6 +6,7 @@
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 	import { ImagePlus, LoaderCircle, ArrowUp, Box, Reply, X, ChevronUp, SlidersHorizontal } from 'lucide-svelte';
 	import SettingsModal from '$lib/components/Settings.svelte';
+	import * as settingsService from '$lib/services/settings.service';
 	import { tick } from 'svelte';
 	import type { Workflow } from '$lib/services/workflow.service';
 
@@ -20,6 +21,18 @@
 
 	// TODO: Pass selectedWorkflow to the API when workflow integration is implemented
 	let selectedWorkflow = $state<Workflow | null>(null);
+
+	// Restore selected workflow from persistence on mount
+	const savedWorkflowId = settingsService.loadSelectedWorkflowId();
+	if (savedWorkflowId) {
+		const match = workflowStore.workflows.find((w) => w.id === savedWorkflowId);
+		if (match) selectedWorkflow = match;
+	}
+
+	// Persist selected workflow ID whenever it changes
+	$effect(() => {
+		settingsService.saveSelectedWorkflowId(selectedWorkflow?.id ?? null);
+	});
 
 	// Open settings and pre-select the current workflow for editing
 	function openSettingsWithWorkflow() {
@@ -249,14 +262,13 @@
 				placeholder={pendingImages.length > 0 ? 'Add a caption...' : 'Type a message...'}
 				rows={1}
 				disabled={chatStore.isResponding}
-				class="min-h-8 max-h-44 w-full resize-none border-0 bg-transparent px-2 py-1 text-sm shadow-none focus-visible:ring-0 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:opacity-0 hover:[&::-webkit-scrollbar-thumb]:opacity-100 transition-opacity"
+				class="min-h-8 max-h-44 w-full resize-none border-0 bg-transparent px-2 py-1 text-sm shadow-none focus-visible:ring-0"
 			/>
 		</div>
 
 		<!-- Model/Send Controls -->
 		<div class="flex items-center gap-2 relative">
-			<!-- Settings Button: only shown when a workflow is selected -->
-			{#if selectedWorkflow}
+			<!-- Settings Button -->
 				<Tooltip>
 					<TooltipTrigger>
 						<Button
@@ -268,9 +280,12 @@
 							<SlidersHorizontal class="h-4 w-4" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Edit workflow</TooltipContent>
+					{#if selectedWorkflow}
+						<TooltipContent>Edit workflow</TooltipContent>
+					{:else}
+						<TooltipContent>Workflows</TooltipContent>
+					{/if}
 				</Tooltip>
-			{/if}
 
 			<!-- Workflow Selector Dropup -->
 			<div class="relative">
@@ -288,7 +303,7 @@
 				{#if showWorkflowDropdown}
 					<div class="absolute bottom-full left-0 z-50 mb-2 w-64 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
 						<!-- Workflow List: custom scrollbar that hides when not hovered -->
-						<div class="max-h-60 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:opacity-0 hover:[&::-webkit-scrollbar-thumb]:opacity-100 transition-opacity">
+						<div class="max-h-60 overflow-y-auto">
 							{#if workflowStore.workflows.length === 0}
 								<p class="px-4 py-3 text-center text-xs text-muted-foreground">
 									No workflows yet

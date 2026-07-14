@@ -3,8 +3,11 @@
 	import { chatStore } from '$lib/stores/chat.store.svelte';
 	import { themeStore } from '$lib/stores/theme.store.svelte';
 	import { workflowStore } from '$lib/stores/workflow.store.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import ChatView from '$lib/components/ChatView.svelte';
+	import { Sun, Moon } from 'lucide-svelte';
 
 	let sidebarCollapsed = $state(false);
 	let loaded = $state(false);
@@ -21,7 +24,7 @@
 
 {#if loaded}
 	<!-- App Shell -->
-	<div class="flex h-screen w-screen overflow-hidden bg-background text-foreground antialiased">
+	<div class="relative flex h-screen w-screen overflow-hidden bg-background text-foreground antialiased">
 		<!-- Sidebar -->
 		<Sidebar bind:collapsed={sidebarCollapsed} />
 
@@ -29,5 +32,30 @@
 		<main class="flex flex-1 min-w-0 flex-col overflow-hidden">
 			<ChatView />
 		</main>
+
+		<!-- Theme Toggle: top right of screen -->
+		<div class="absolute top-3 right-3 z-50">
+			<Tooltip>
+				<TooltipTrigger>
+					<Button
+						variant="ghost"
+						size="icon"
+						onclick={() => themeStore.toggle()}
+						class="h-9 w-9 cursor-pointer"
+						aria-label="Toggle theme"
+					>
+						{#if themeStore.isDark}
+							<Sun class="h-4 w-4" />
+						{:else}
+							<Moon class="h-4 w-4" />
+						{/if}
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent>
+					{themeStore.isDark ? 'Light mode' : 'Dark mode'}
+					<span class="text-muted-foreground">Ctrl + Shift + H</span>
+				</TooltipContent>
+			</Tooltip>
+		</div>
 	</div>
 {/if}
