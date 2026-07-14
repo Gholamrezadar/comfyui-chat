@@ -10,6 +10,7 @@
 <!-- Document Head -->
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<title>ComfyUI Chat</title>
 </svelte:head>
 
 <!-- Tooltip Provider -->
