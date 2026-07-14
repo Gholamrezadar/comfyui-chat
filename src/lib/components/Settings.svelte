@@ -186,32 +186,31 @@
 
 			<!-- Main Panel -->
 			<div class="flex flex-1 flex-col md:rounded-r-2xl">
-				{#if workflowStore.activeWorkflow}
-					<!-- Action Bar -->
-					<div class="flex items-center justify-end gap-2 border-b border-border px-4 py-3">
-						{#if !isNewWorkflow}
-							<Button
-								variant="ghost"
-								size="icon"
-								class="h-7 w-7 cursor-pointer text-muted-foreground hover:text-destructive"
-								onclick={handleDelete}
-								aria-label="Delete workflow"
-							>
-								<Trash2 class="h-4 w-4" />
-							</Button>
-						{/if}
+				<!-- Action Bar: always visible -->
+				<div class="flex items-center justify-end gap-2 border-b border-border px-4 py-3">
+					{#if workflowStore.activeWorkflow && !isNewWorkflow}
 						<Button
 							variant="ghost"
 							size="icon"
-							class="h-7 w-7 cursor-pointer"
-							onclick={() => (open = false)}
-							aria-label="Close"
+							class="h-7 w-7 cursor-pointer text-muted-foreground hover:text-destructive"
+							onclick={handleDelete}
+							aria-label="Delete workflow"
 						>
-							<X class="h-4 w-4" />
+							<Trash2 class="h-4 w-4" />
 						</Button>
-					</div>
+					{/if}
+					<Button
+						variant="ghost"
+						size="icon"
+						class="h-7 w-7 cursor-pointer"
+						onclick={() => (open = false)}
+						aria-label="Close"
+					>
+						<X class="h-4 w-4" />
+					</Button>
+				</div>
 
-					<!-- Content: min-h-0 allows flex child to shrink, enabling ScrollArea to scroll -->
+				{#if workflowStore.activeWorkflow}
 					<div class="min-h-0 flex-1">
 						<ScrollArea class="h-full">
 							<div class="flex flex-col gap-4 p-4">
