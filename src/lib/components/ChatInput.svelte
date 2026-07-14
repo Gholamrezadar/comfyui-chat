@@ -1,9 +1,13 @@
 <script lang="ts">
 	import { chatStore } from '$lib/stores/chat.store.svelte';
+	import { workflowStore } from '$lib/stores/workflow.store.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { ImagePlus, LoaderCircle, ArrowUp, Box, Reply, X } from 'lucide-svelte';
+	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
+	import { ImagePlus, LoaderCircle, ArrowUp, Box, Reply, X, ChevronUp, SlidersHorizontal } from 'lucide-svelte';
+	import SettingsModal from '$lib/components/Settings.svelte';
 	import { tick } from 'svelte';
+	import type { Workflow } from '$lib/services/workflow.service';
 
 	let inputValue = $state('');
 	let textareaEl: HTMLTextAreaElement | null = $state(null);
@@ -11,6 +15,19 @@
 	let pendingImages = $state<string[]>([]);
 	let isDragging = $state(false);
 	let lastReplyTargetId = $state<string | null>(null);
+	let showWorkflowDropdown = $state(false);
+	let showSettings = $state(false);
+
+	// TODO: Pass selectedWorkflow to the API when workflow integration is implemented
+	let selectedWorkflow = $state<Workflow | null>(null);
+
+	// Open settings and pre-select the current workflow for editing
+	function openSettingsWithWorkflow() {
+		if (selectedWorkflow) {
+			workflowStore.selectWorkflow(selectedWorkflow.id);
+		}
+		showSettings = true;
+	}
 
 	const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 	const MAX_IMAGES = 5;
@@ -194,13 +211,13 @@
 	<!-- Image Previews -->
 	{#if pendingImages.length > 0}
 		<div class="flex flex-wrap gap-2">
-			{#each pendingImages as img, i}
+			{#each pendingImages as img, i (i)}
 				<!-- Image Preview Item -->
 				<div class="group relative h-16 w-16 overflow-hidden rounded-lg border border-border">
 					<img src={img} alt="Upload preview" class="h-full w-full object-cover" />
 					<button
 						onclick={() => removePendingImage(i)}
-						class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+						class="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-muted text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
 					>
 						<X class="h-2.5 w-2.5" />
 					</button>
@@ -221,8 +238,8 @@
 			<ImagePlus class="h-4 w-4" />
 		</Button>
 
-		<!-- Textarea Container -->
-		<div class="flex flex-1 items-center">
+		<!-- Textarea Container: min-w-0 prevents flex overflow from long text -->
+		<div class="flex min-w-0 flex-1 items-center">
 			<Textarea
 				bind:ref={textareaEl}
 				bind:value={inputValue}
@@ -232,19 +249,69 @@
 				placeholder={pendingImages.length > 0 ? 'Add a caption...' : 'Type a message...'}
 				rows={1}
 				disabled={chatStore.isResponding}
-				class="min-h-8 max-h-44 w-full resize-none border-0 bg-transparent px-2 py-1 text-sm shadow-none focus-visible:ring-0"
+				class="min-h-8 max-h-44 w-full resize-none border-0 bg-transparent px-2 py-1 text-sm shadow-none focus-visible:ring-0 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:opacity-0 hover:[&::-webkit-scrollbar-thumb]:opacity-100 transition-opacity"
 			/>
 		</div>
 
 		<!-- Model/Send Controls -->
-		<div class="flex items-center gap-2">
-			<!-- Model Badge -->
-			<button
-				class="flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
-			>
-				<Box class="h-3.5 w-3.5" />
-				Qwen 3.5 9B
-			</button>
+		<div class="flex items-center gap-2 relative">
+			<!-- Settings Button: only shown when a workflow is selected -->
+			{#if selectedWorkflow}
+				<Tooltip>
+					<TooltipTrigger>
+						<Button
+							variant="ghost"
+							size="icon"
+							onclick={openSettingsWithWorkflow}
+							class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
+						>
+							<SlidersHorizontal class="h-4 w-4" />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Edit workflow</TooltipContent>
+				</Tooltip>
+			{/if}
+
+			<!-- Workflow Selector Dropup -->
+			<div class="relative">
+				<button
+					onclick={() => (showWorkflowDropdown = !showWorkflowDropdown)}
+					onblur={() => setTimeout(() => (showWorkflowDropdown = false), 150)}
+					class="flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+				>
+					<Box class="h-3.5 w-3.5" />
+					{selectedWorkflow?.name || 'No Workflow'}
+					<ChevronUp class="h-3 w-3" />
+				</button>
+
+				<!-- Dropup Menu -->
+				{#if showWorkflowDropdown}
+					<div class="absolute bottom-full left-0 z-50 mb-2 w-64 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+						<!-- Workflow List: custom scrollbar that hides when not hovered -->
+						<div class="max-h-60 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:opacity-0 hover:[&::-webkit-scrollbar-thumb]:opacity-100 transition-opacity">
+							{#if workflowStore.workflows.length === 0}
+								<p class="px-4 py-3 text-center text-xs text-muted-foreground">
+									No workflows yet
+								</p>
+							{:else}
+								{#each workflowStore.workflows as wf (wf.id)}
+									<button
+										onclick={() => {
+											selectedWorkflow = wf;
+											showWorkflowDropdown = false;
+										}}
+										class="flex w-full flex-col gap-0.5 px-4 py-2.5 text-left transition-colors hover:bg-accent cursor-pointer"
+										class:bg-accent={selectedWorkflow?.id === wf.id}
+									>
+										<span class="text-sm font-medium text-foreground">{wf.name || 'Untitled Workflow'}</span>
+										<span class="text-xs text-muted-foreground truncate">{wf.base_url || 'No URL'}</span>
+									</button>
+								{/each}
+							{/if}
+						</div>
+				</div>
+			{/if}
+			</div>
 
 			<!-- Send Button -->
 			<Button
@@ -267,3 +334,5 @@
 <p class="mt-1.5 text-center text-[10px] text-muted-foreground">
 	Enter to send · Shift+Enter for newline · Paste or drag images
 </p>
+
+<SettingsModal bind:open={showSettings} />
