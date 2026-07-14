@@ -12,6 +12,7 @@
 	let editName = $state('');
 	let editBaseUrl = $state('');
 	let editWorkflowText = $state('');
+	let errors = $state<{ name?: string; base_url?: string; workflow?: string }>({});
 
 	// When a workflow is selected, load it into the editor fields
 	$effect(() => {
@@ -20,23 +21,61 @@
 			editName = wf.name;
 			editBaseUrl = wf.base_url;
 			editWorkflowText = wf.workflow;
+			errors = {};
 		}
 	});
+
+	function validate(): boolean {
+		const newErrors: typeof errors = {};
+		if (!editName.trim()) {
+			newErrors.name = 'Name is required';
+		} else {
+			const duplicate = workflowStore.workflows.some(
+				(w) => w.id !== workflowStore.activeId && w.name.toLowerCase() === editName.trim().toLowerCase()
+			);
+			if (duplicate) newErrors.name = 'Name already exists';
+		}
+		if (!editBaseUrl.trim()) {
+			newErrors.base_url = 'URL is required';
+		} else {
+			try {
+				const url = new URL(editBaseUrl.trim());
+				if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+					newErrors.base_url = 'Must be a valid HTTP/HTTPS URL';
+				}
+			} catch {
+				newErrors.base_url = 'Must be a valid HTTP/HTTPS URL';
+			}
+		}
+		if (!editWorkflowText.trim()) {
+			newErrors.workflow = 'Workflow is required';
+		} else {
+			try {
+				JSON.parse(editWorkflowText);
+			} catch {
+				newErrors.workflow = 'Must be valid JSON';
+			}
+		}
+		errors = newErrors;
+		return Object.keys(newErrors).length === 0;
+	}
 
 	function handleNew() {
 		workflowStore.newWorkflow();
 		editName = '';
 		editBaseUrl = '';
 		editWorkflowText = '';
+		errors = {};
 	}
 
 	async function handleSave() {
+		if (!validate()) return;
 		const wf = workflowStore.activeWorkflow;
 		if (!wf) return;
 		await workflowStore.saveWorkflow({
 			...wf,
-			name: editName,
-			base_url: editBaseUrl,
+			name: editName.trim(),
+			base_url: editBaseUrl.trim(),
 			workflow: editWorkflowText
 		});
 	}
@@ -155,31 +194,42 @@
 
 					<!-- Content -->
 					<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
-						<div class="flex flex-col gap-1.5">
-							<label for="wf-name" class="text-sm font-medium text-foreground">Name</label>
-							<Input
-								id="wf-name"
-								bind:value={editName}
-								placeholder="Enter workflow name..."
-							/>
-						</div>
-						<div class="flex flex-col gap-1.5">
-							<label for="wf-base-url" class="text-sm font-medium text-foreground">Base URL</label>
-							<Input
-								id="wf-base-url"
-								bind:value={editBaseUrl}
-								placeholder="http://127.0.0.1:8188"
-							/>
-						</div>
-						<div class="flex flex-1 flex-col gap-1.5">
-							<label for="wf-workflow" class="text-sm font-medium text-foreground">Workflow</label>
-							<Textarea
-								id="wf-workflow"
-								bind:value={editWorkflowText}
-								placeholder="Paste your workflow JSON here..."
-								class="flex-1 font-mono text-xs"
-							/>
-						</div>
+					<div class="flex flex-col gap-1.5">
+						<label for="wf-name" class="text-sm font-medium text-foreground">Name</label>
+						<Input
+							id="wf-name"
+							bind:value={editName}
+							placeholder="Enter workflow name..."
+							class={errors.name ? 'border-destructive' : ''}
+						/>
+						{#if errors.name}
+							<p class="text-xs text-destructive">{errors.name}</p>
+						{/if}
+					</div>
+					<div class="flex flex-col gap-1.5">
+						<label for="wf-base-url" class="text-sm font-medium text-foreground">Base URL</label>
+						<Input
+							id="wf-base-url"
+							bind:value={editBaseUrl}
+							placeholder="http://127.0.0.1:8188"
+							class={errors.base_url ? 'border-destructive' : ''}
+						/>
+						{#if errors.base_url}
+							<p class="text-xs text-destructive">{errors.base_url}</p>
+						{/if}
+					</div>
+					<div class="flex flex-1 flex-col gap-1.5">
+						<label for="wf-workflow" class="text-sm font-medium text-foreground">Workflow</label>
+						<Textarea
+							id="wf-workflow"
+							bind:value={editWorkflowText}
+							placeholder="Paste your workflow JSON here..."
+							class="flex-1 font-mono text-xs {errors.workflow ? 'border-destructive' : ''}"
+						/>
+						{#if errors.workflow}
+							<p class="text-xs text-destructive">{errors.workflow}</p>
+						{/if}
+					</div>
 						<div class="flex justify-end">
 							<Button onclick={handleSave} class="cursor-pointer px-6">Save</Button>
 						</div>
