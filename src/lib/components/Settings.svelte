@@ -9,6 +9,7 @@
 
 	let { open = $bindable(false) }: { open: boolean } = $props();
 
+	// --- Form state ---
 	let editName = $state('');
 	let editBaseUrl = $state('');
 	let editWorkflowText = $state('');
@@ -60,7 +61,10 @@
 		return Object.keys(newErrors).length === 0;
 	}
 
+	// Block creating a new workflow if the current one has unsaved changes
+	// or is a new workflow that hasn't been saved yet
 	function handleNew() {
+		if (hasUnsavedChanges || isNewWorkflow) return;
 		workflowStore.newWorkflow();
 		editName = '';
 		editBaseUrl = '';
@@ -92,7 +96,10 @@
 		}
 	}
 
+	// Block switching to another workflow if the current one has unsaved changes
+	// or is a new workflow that hasn't been saved yet
 	function handleSelect(id: string) {
+		if (hasUnsavedChanges || isNewWorkflow) return;
 		workflowStore.selectWorkflow(id);
 	}
 
@@ -102,14 +109,24 @@
 		}
 	}
 
-	// A workflow is "new" if it has just been created (empty name)
-	// Actually, let's track this by checking if the workflow exists in the persisted list
+	// Whether the active workflow is newly created (not yet persisted in IndexedDB)
 	const isNewWorkflow = $derived(
 		workflowStore.activeId !== null &&
 			!workflowStore.workflows.some(
 				(w) => w.id === workflowStore.activeId && w.name !== ''
 			)
 	);
+
+	// Whether the current form fields differ from the saved workflow data
+	const hasUnsavedChanges = $derived.by(() => {
+		const wf = workflowStore.activeWorkflow;
+		if (!wf) return false;
+		return (
+			editName.trim() !== wf.name ||
+			editBaseUrl.trim() !== wf.base_url ||
+			editWorkflowText !== wf.workflow
+		);
+	});
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -141,32 +158,34 @@
 					</Button>
 				</div>
 
-				<!-- Workflow List -->
-				<ScrollArea class="flex-1">
-					{#if workflowStore.workflows.length === 0}
-						<p class="px-4 py-4 text-center text-xs text-muted-foreground">
-							No workflows yet
-						</p>
-					{:else}
-						<div class="flex flex-col gap-0.5 p-2">
-							{#each workflowStore.workflows as wf (wf.id)}
-								<button
-									onclick={() => handleSelect(wf.id)}
-									class="w-full cursor-pointer rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
-									class:bg-accent={workflowStore.activeId === wf.id}
-								>
-									<p class="truncate font-medium">
-										{wf.name || 'Untitled Workflow'}
-									</p>
-								</button>
-							{/each}
-						</div>
-					{/if}
-				</ScrollArea>
+				<!-- Workflow List: min-h-0 allows flex child to shrink, enabling ScrollArea to scroll -->
+				<div class="min-h-0 flex-1">
+					<ScrollArea class="h-full">
+						{#if workflowStore.workflows.length === 0}
+							<p class="px-4 py-4 text-center text-xs text-muted-foreground">
+								No workflows yet
+							</p>
+						{:else}
+							<div class="flex flex-col gap-0.5 p-2">
+								{#each workflowStore.workflows as wf (wf.id)}
+									<button
+										onclick={() => handleSelect(wf.id)}
+										class="w-full cursor-pointer rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
+										class:bg-accent={workflowStore.activeId === wf.id}
+									>
+										<p class="truncate font-medium">
+											{wf.name || 'Untitled Workflow'}
+										</p>
+									</button>
+								{/each}
+							</div>
+						{/if}
+					</ScrollArea>
+				</div>
 			</div>
 
 			<!-- Main Panel -->
-			<div class="flex flex-1 flex-col overflow-hidden md:rounded-r-2xl">
+			<div class="flex flex-1 flex-col md:rounded-r-2xl">
 				{#if workflowStore.activeWorkflow}
 					<!-- Action Bar -->
 					<div class="flex items-center justify-end gap-2 border-b border-border px-4 py-3">
@@ -192,47 +211,51 @@
 						</Button>
 					</div>
 
-					<!-- Content -->
-					<div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
-					<div class="flex flex-col gap-1.5">
-						<label for="wf-name" class="text-sm font-medium text-foreground">Name</label>
-						<Input
-							id="wf-name"
-							bind:value={editName}
-							placeholder="Enter workflow name..."
-							class={errors.name ? 'border-destructive' : ''}
-						/>
-						{#if errors.name}
-							<p class="text-xs text-destructive">{errors.name}</p>
-						{/if}
-					</div>
-					<div class="flex flex-col gap-1.5">
-						<label for="wf-base-url" class="text-sm font-medium text-foreground">Base URL</label>
-						<Input
-							id="wf-base-url"
-							bind:value={editBaseUrl}
-							placeholder="http://127.0.0.1:8188"
-							class={errors.base_url ? 'border-destructive' : ''}
-						/>
-						{#if errors.base_url}
-							<p class="text-xs text-destructive">{errors.base_url}</p>
-						{/if}
-					</div>
-					<div class="flex flex-1 flex-col gap-1.5">
-						<label for="wf-workflow" class="text-sm font-medium text-foreground">Workflow</label>
-						<Textarea
-							id="wf-workflow"
-							bind:value={editWorkflowText}
-							placeholder="Paste your workflow JSON here..."
-							class="flex-1 font-mono text-xs {errors.workflow ? 'border-destructive' : ''}"
-						/>
-						{#if errors.workflow}
-							<p class="text-xs text-destructive">{errors.workflow}</p>
-						{/if}
-					</div>
-						<div class="flex justify-end">
-							<Button onclick={handleSave} class="cursor-pointer px-6">Save</Button>
-						</div>
+					<!-- Content: min-h-0 allows flex child to shrink, enabling ScrollArea to scroll -->
+					<div class="min-h-0 flex-1">
+						<ScrollArea class="h-full">
+							<div class="flex flex-col gap-4 p-4">
+								<div class="flex flex-col gap-1.5">
+									<label for="wf-name" class="text-sm font-medium text-foreground">Name</label>
+									<Input
+										id="wf-name"
+										bind:value={editName}
+										placeholder="Enter workflow name..."
+										class={errors.name ? 'border-destructive' : ''}
+									/>
+									{#if errors.name}
+										<p class="text-xs text-destructive">{errors.name}</p>
+									{/if}
+								</div>
+								<div class="flex flex-col gap-1.5">
+									<label for="wf-base-url" class="text-sm font-medium text-foreground">Base URL</label>
+									<Input
+										id="wf-base-url"
+										bind:value={editBaseUrl}
+										placeholder="http://127.0.0.1:8188"
+										class={errors.base_url ? 'border-destructive' : ''}
+									/>
+									{#if errors.base_url}
+										<p class="text-xs text-destructive">{errors.base_url}</p>
+									{/if}
+								</div>
+								<div class="flex flex-1 flex-col gap-1.5">
+									<label for="wf-workflow" class="text-sm font-medium text-foreground">Workflow</label>
+									<Textarea
+										id="wf-workflow"
+										bind:value={editWorkflowText}
+										placeholder="Paste your workflow JSON here..."
+										class="flex-1 font-mono text-xs {errors.workflow ? 'border-destructive' : ''}"
+									/>
+									{#if errors.workflow}
+										<p class="text-xs text-destructive">{errors.workflow}</p>
+									{/if}
+								</div>
+								<div class="flex justify-end">
+									<Button onclick={handleSave} class="cursor-pointer px-6">Save</Button>
+								</div>
+							</div>
+						</ScrollArea>
 					</div>
 				{:else}
 					<!-- Empty State -->

@@ -39,7 +39,9 @@ function createChatStore() {
 	}
 
 	// Create a fresh conversation and make it active
+	// Guard: don't create a new one if the active conversation is already empty
 	function newConversation() {
+		if (activeConversation && activeConversation.messages.length === 0) return;
 		const convo = chatService.createConversation();
 		conversations = [convo, ...conversations];
 		activeId = convo.id;
