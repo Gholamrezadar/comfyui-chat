@@ -102,6 +102,7 @@
 				class={`flex w-fit max-w-[280px] items-center gap-1.5 rounded-none border-0 bg-transparent px-0 py-0 text-[11px] text-muted-foreground cursor-pointer transition-colors hover:text-foreground ${
 					isUser ? 'self-end text-right' : 'self-start text-left'
 				}`}
+				tabindex={-1}
 			>
 				<!-- Reply Icon at the start -->
 				{#if !isUser}
@@ -144,18 +145,21 @@
 					onkeydown={handleEditKeydown}
 					rows={1}
 					class="w-full resize-none bg-transparent text-sm leading-relaxed text-foreground/85 focus:outline-none"
+					tabindex={0}
 				></textarea>
 				<!-- Edit Controls -->
 				<div class="mt-1.5 flex items-center justify-end gap-1">
 					<button
 						onclick={cancelEdit}
 						class="rounded p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+						tabindex={0}
 					>
 						<X class="h-3.5 w-3.5" />
 					</button>
 					<button
 						onclick={confirmEdit}
 						class="rounded p-1 text-muted-foreground hover:text-primary cursor-pointer"
+						tabindex={0}
 					>
 						<Check class="h-3.5 w-3.5" />
 					</button>
@@ -181,6 +185,7 @@
 							<button
 								onclick={() => openLightbox(img)}
 								class="relative block overflow-hidden cursor-pointer {visibleImages.length === 1 ? 'rounded-lg' : 'first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg'}"
+								tabindex={-1}
 							>
 								<img
 									src={img}
@@ -225,6 +230,7 @@
 					onclick={() => chatStore.setReplyTo(message)}
 					class="rounded p-1 text-muted-foreground hover:text-foreground cursor-pointer"
 					aria-label="Reply"
+					tabindex="-1"
 				>
 					<Reply class="h-3.5 w-3.5" />
 				</button>
@@ -235,6 +241,7 @@
 						onclick={startEdit}
 						class="rounded p-1 text-muted-foreground hover:text-foreground cursor-pointer"
 						aria-label="Edit"
+						tabindex="-1"
 					>
 						<Pencil class="h-3.5 w-3.5" />
 					</button>
@@ -245,6 +252,7 @@
 					onclick={() => chatStore.deleteMessage(message.id)}
 					class="rounded p-1 text-muted-foreground hover:text-destructive cursor-pointer"
 					aria-label="Delete"
+					tabindex="-1"
 				>
 					<Trash2 class="h-3.5 w-3.5" />
 				</button>

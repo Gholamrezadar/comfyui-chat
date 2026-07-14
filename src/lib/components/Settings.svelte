@@ -109,6 +109,29 @@
 		}
 	}
 
+	// Handle ESC key directly on the dialog (stopPropagation prevents window handler)
+	function handleDialogKeydown(e: KeyboardEvent) {
+		e.stopPropagation();
+		if (e.key === 'Escape' && open) {
+			open = false;
+		}
+		// Enter to save when not focused on textarea (allow newlines in textarea with Enter)
+		else if (e.key === 'Enter' && !e.shiftKey && workflowStore.activeWorkflow && (e.target as HTMLElement)?.tagName !== 'TEXTAREA') {
+			e.preventDefault();
+			handleSave();
+		}
+	}
+
+	// Auto-focus the Name input when the modal opens
+	$effect(() => {
+		if (open) {
+			const nameInput = document.getElementById('wf-name');
+			if (nameInput) {
+				requestAnimationFrame(() => nameInput.focus());
+			}
+		}
+	});
+
 	// Whether the active workflow is newly created (not yet persisted in IndexedDB)
 	const isNewWorkflow = $derived(
 		workflowStore.activeId !== null &&
@@ -136,11 +159,12 @@
 		<div
 			class="flex h-full w-full flex-row bg-card md:h-[70vh] md:max-w-3xl md:rounded-2xl md:border md:border-border md:shadow-lg overflow-hidden"
 			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.stopPropagation()}
+			onkeydown={handleDialogKeydown}
 			role="dialog"
 			aria-modal="true"
 			aria-label="Settings"
-			tabindex="0"
+			tabindex="-1"
+			id="settings-dialog"
 		>
 			<!-- Sidebar: Workflow List -->
 			<div class="flex w-48 flex-col border-r border-border md:rounded-l-2xl">
@@ -153,6 +177,7 @@
 						class="h-7 w-7 cursor-pointer"
 						onclick={handleNew}
 						aria-label="Add workflow"
+						tabindex={-1}
 					>
 						<Plus class="h-4 w-4" />
 					</Button>
@@ -167,12 +192,13 @@
 							</p>
 						{:else}
 							<div class="flex flex-col gap-0.5 p-2">
-								{#each workflowStore.workflows as wf (wf.id)}
-									<button
-										onclick={() => handleSelect(wf.id)}
-										class="w-full cursor-pointer rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
-										class:bg-accent={workflowStore.activeId === wf.id}
-									>
+						{#each workflowStore.workflows as wf (wf.id)}
+								<button
+									onclick={() => handleSelect(wf.id)}
+									class="w-full cursor-pointer rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
+									class:bg-accent={workflowStore.activeId === wf.id}
+									tabindex={-1}
+								>
 										<p class="truncate font-medium">
 											{wf.name || 'Untitled Workflow'}
 										</p>
@@ -195,6 +221,7 @@
 							class="h-7 w-7 cursor-pointer text-muted-foreground hover:text-destructive"
 							onclick={handleDelete}
 							aria-label="Delete workflow"
+							tabindex={-1}
 						>
 							<Trash2 class="h-4 w-4" />
 						</Button>
@@ -205,6 +232,7 @@
 						class="h-7 w-7 cursor-pointer"
 						onclick={() => (open = false)}
 						aria-label="Close"
+						tabindex={-1}
 					>
 						<X class="h-4 w-4" />
 					</Button>
@@ -216,43 +244,46 @@
 							<div class="flex flex-col gap-4 p-4">
 								<div class="flex flex-col gap-1.5">
 									<label for="wf-name" class="text-sm font-medium text-foreground">Name</label>
-									<Input
-										id="wf-name"
-										bind:value={editName}
-										placeholder="Enter workflow name..."
-										class={errors.name ? 'border-destructive' : ''}
-									/>
+								<Input
+									id="wf-name"
+									bind:value={editName}
+									placeholder="Enter workflow name..."
+									class={errors.name ? 'border-destructive' : ''}
+									tabindex={1}
+								/>
 									{#if errors.name}
 										<p class="text-xs text-destructive">{errors.name}</p>
 									{/if}
 								</div>
 								<div class="flex flex-col gap-1.5">
 									<label for="wf-base-url" class="text-sm font-medium text-foreground">Base URL</label>
-									<Input
-										id="wf-base-url"
-										bind:value={editBaseUrl}
-										placeholder="http://127.0.0.1:8188"
-										class={errors.base_url ? 'border-destructive' : ''}
-									/>
+								<Input
+									id="wf-base-url"
+									bind:value={editBaseUrl}
+									placeholder="http://127.0.0.1:8188"
+									class={errors.base_url ? 'border-destructive' : ''}
+									tabindex={2}
+								/>
 									{#if errors.base_url}
 										<p class="text-xs text-destructive">{errors.base_url}</p>
 									{/if}
 								</div>
 								<div class="flex flex-1 flex-col gap-1.5">
 									<label for="wf-workflow" class="text-sm font-medium text-foreground">Workflow</label>
-									<Textarea
-										id="wf-workflow"
-										bind:value={editWorkflowText}
-										placeholder="Paste your workflow JSON here..."
-										class="flex-1 font-mono text-xs {errors.workflow ? 'border-destructive' : ''}"
-									/>
+								<Textarea
+									id="wf-workflow"
+									bind:value={editWorkflowText}
+									placeholder="Paste your workflow JSON here..."
+									class="flex-1 font-mono text-xs {errors.workflow ? 'border-destructive' : ''}"
+									tabindex={3}
+								/>
 									{#if errors.workflow}
 										<p class="text-xs text-destructive">{errors.workflow}</p>
 									{/if}
 								</div>
-								<div class="flex justify-end">
-									<Button onclick={handleSave} class="cursor-pointer px-6">Save</Button>
-								</div>
+						<div class="flex justify-end">
+						<Button onclick={handleSave} class="cursor-pointer px-6" tabindex={4}>Save</Button>
+					</div>
 							</div>
 						</ScrollArea>
 					</div>

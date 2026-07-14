@@ -17,7 +17,9 @@
 		Bot,
 		PanelLeft,
 		ImageIcon,
-		Plus
+		Plus,
+		Sun,
+		Moon
 	} from 'lucide-svelte';
 
 	// Props
@@ -122,20 +124,29 @@
 	class:md:w-14={collapsed}
 >
 	<!-- Sidebar Toggle Button -->
-	<button
-		onclick={toggleSidebar}
-		class="absolute top-3 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-accent"
-		class:right-3={!collapsed}
-		class:left-3={collapsed}
-		aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-	>
-		{#if collapsed}
-			<!-- <ChevronRight class="h-4 w-4" /> -->
-			<PanelLeft class="h-4 w-4" />
-		{:else}
-			<ChevronLeft class="h-4 w-4" />
-		{/if}
-	</button>
+	<Tooltip>
+		<TooltipTrigger>
+			<button
+				onclick={toggleSidebar}
+				class="absolute top-4 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-accent"
+				class:right-3={!collapsed}
+				class:left-3={collapsed}
+				aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+				tabindex={1}
+			>
+				{#if collapsed}
+					<!-- <ChevronRight class="h-4 w-4" /> -->
+					<PanelLeft class="h-4 w-4" />
+				{:else}
+					<ChevronLeft class="h-4 w-4" />
+				{/if}
+			</button>
+		</TooltipTrigger>
+		<TooltipContent side="right" alignOffset={10}>
+			{collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+			<span class="text-muted-foreground">{formatShortcut(shortcuts[2])}</span>
+		</TooltipContent>
+	</Tooltip>
 
 	<!-- Sidebar Header -->
 	<div class="flex items-center gap-2 px-3 py-3" class:justify-center={collapsed}>
@@ -165,25 +176,27 @@
 						size="icon"
 						onclick={() => chatStore.newConversation()}
 						class="h-9 w-9 cursor-pointer"
-					>
-						<Plus class="h-4 w-4" />
-					</Button>
-				</TooltipTrigger>
-			<TooltipContent side="right">New Chat <span class="text-muted-foreground">{formatShortcut(shortcuts[0])}</span> </TooltipContent>
-		</Tooltip>
-
-		<Tooltip>
-			<TooltipTrigger>
-				<Button
-					variant="ghost"
-					size="icon"
-					onclick={() => {
-						collapsed = false;
-						focusSearchInput();
-					}}
-					class="h-9 w-9 cursor-pointer"
-					aria-label="Search"
+					tabindex={2}
 				>
+					<Plus class="h-4 w-4" />
+				</Button>
+			</TooltipTrigger>
+		<TooltipContent side="right">New Chat <span class="text-muted-foreground">{formatShortcut(shortcuts[0])}</span> </TooltipContent>
+	</Tooltip>
+
+	<Tooltip>
+		<TooltipTrigger>
+			<Button
+				variant="ghost"
+				size="icon"
+				onclick={() => {
+					collapsed = false;
+					focusSearchInput();
+				}}
+				class="h-9 w-9 cursor-pointer"
+				aria-label="Search"
+				tabindex={3}
+			>
 					<Search class="h-4 w-4" />
 				</Button>
 			</TooltipTrigger>
@@ -196,6 +209,7 @@
 				variant="ghost"
 				class="h-9 w-full justify-start gap-2 text-sm cursor-pointer"
 				onclick={() => chatStore.newConversation()}
+				tabindex={2}
 			>
 				<Plus class="h-4 w-4 shrink-0" />
 				New Chat
@@ -208,6 +222,7 @@
 					bind:value={searchInput}
 					placeholder="Search conversations..."
 					class="h-8 text-sm focus-visible:ring-0 focus-visible:border-input focus-visible:bg-input/50"
+					tabindex={3}
 				/>
 			</div>
 		{/if}
@@ -241,6 +256,7 @@
 								<button
 									onclick={() => handleSelectConvo(convo.id)}
 									class="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer"
+									tabindex={4}
 								>
 									{#if getLastImage(convo)}
 										<img src={getLastImage(convo)} alt="" class="h-7 w-7 shrink-0 rounded-md object-cover" />
@@ -268,6 +284,7 @@
 									onclick={(e) => handleDeleteConvo(e, convo.id)}
 									class="invisible shrink-0 rounded p-0.5 group-hover:visible hover:text-destructive cursor-pointer"
 									aria-label="Delete conversation"
+									tabindex={-1}
 								>
 									<Trash2 class="h-3 w-3" />
 								</button>
@@ -289,10 +306,33 @@
 		class:border-none={collapsed}
 	>
 		{#if collapsed}
+			<!-- Collapsed Theme Toggle (mobile only) -->
+			<Tooltip>
+				<TooltipTrigger>
+					<Button
+						variant="ghost"
+						size="icon"
+						onclick={() => themeStore.toggle()}
+						class="h-9 w-9 cursor-pointer md:hidden"
+						aria-label="Toggle theme"
+					>
+						{#if themeStore.isDark}
+							<Sun class="h-4 w-4" />
+						{:else}
+							<Moon class="h-4 w-4" />
+						{/if}
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent side="right">
+					{themeStore.isDark ? 'Light mode' : 'Dark mode'}
+					<span class="text-muted-foreground">{formatShortcut(shortcuts[4])}</span>
+				</TooltipContent>
+			</Tooltip>
+
 			<!-- Collapsed Settings -->
 			<Tooltip>
 				<TooltipTrigger>
-					<Button variant="ghost" size="icon" class="h-9 w-9 cursor-pointer" aria-label="Settings" onclick={() => (showSettings = true)}>
+					<Button variant="ghost" size="icon" class="h-9 w-9 cursor-pointer" aria-label="Settings" onclick={() => (showSettings = true)} tabindex={5}>
 						<Settings class="h-4 w-4" />
 					</Button>
 				</TooltipTrigger>
@@ -301,9 +341,22 @@
 			</TooltipContent>
 			</Tooltip>
 		{:else}
-			<!-- Expanded Settings -->
+			<!-- Expanded: Theme Toggle (mobile only) + Settings -->
 			<div class="flex items-center justify-between px-2 py-1.5">
-				<Button variant="ghost" size="icon" class="h-9 w-9 shrink-0 cursor-pointer" aria-label="Settings" onclick={() => (showSettings = true)}>
+				<Button
+					variant="ghost"
+					size="icon"
+					onclick={() => themeStore.toggle()}
+					class="h-9 w-9 shrink-0 cursor-pointer md:hidden"
+					aria-label="Toggle theme"
+				>
+					{#if themeStore.isDark}
+						<Sun class="h-4 w-4" />
+					{:else}
+						<Moon class="h-4 w-4" />
+					{/if}
+				</Button>
+				<Button variant="ghost" size="icon" class="h-9 w-9 shrink-0 cursor-pointer" aria-label="Settings" onclick={() => (showSettings = true)} tabindex={5}>
 					<Settings class="h-4 w-4" />
 				</Button>
 			</div>

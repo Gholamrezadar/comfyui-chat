@@ -21,6 +21,24 @@
 			open = false;
 		}
 	}
+
+	// Handle ESC key directly on the dialog (stopPropagation prevents window handler)
+	function handleDialogKeydown(e: KeyboardEvent) {
+		e.stopPropagation();
+		if (e.key === 'Escape' && open) {
+			open = false;
+		}
+	}
+
+	// Auto-focus the dialog when it opens
+	$effect(() => {
+		if (open) {
+			const dialog = document.getElementById('shortcuts-dialog');
+			if (dialog) {
+				requestAnimationFrame(() => dialog.focus());
+			}
+		}
+	});
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -31,11 +49,12 @@
 		<div
 			class="flex w-full max-w-md flex-col rounded-2xl border border-border bg-card shadow-lg"
 			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.stopPropagation()}
+			onkeydown={handleDialogKeydown}
 			role="dialog"
 			aria-modal="true"
 			aria-label="Keyboard Shortcuts"
-			tabindex="0"
+			tabindex="-1"
+			id="shortcuts-dialog"
 		>
 			<!-- Header -->
 			<div class="flex items-center justify-between border-b border-border px-6 py-4">
@@ -49,6 +68,7 @@
 					class="h-8 w-8 cursor-pointer"
 					onclick={() => (open = false)}
 					aria-label="Close"
+					tabindex={0}
 				>
 					<X class="h-4 w-4" />
 				</Button>

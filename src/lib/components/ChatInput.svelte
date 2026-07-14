@@ -18,6 +18,7 @@
 	let lastReplyTargetId = $state<string | null>(null);
 	let showWorkflowDropdown = $state(false);
 	let showSettings = $state(false);
+	let highlightedWorkflowIndex = $state(-1);
 
 	// TODO: Pass selectedWorkflow to the API when workflow integration is implemented
 	let selectedWorkflow = $state<Workflow | null>(null);
@@ -159,6 +160,35 @@
 	const canSend = $derived(
 		(inputValue.trim() || pendingImages.length > 0) && !chatStore.isResponding
 	);
+
+	// Keyboard navigation for workflow dropdown
+	function handleWorkflowDropdownKeydown(e: KeyboardEvent) {
+		const count = workflowStore.workflows.length;
+		if (count === 0) return;
+
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			highlightedWorkflowIndex = (highlightedWorkflowIndex + 1) % count;
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			highlightedWorkflowIndex = (highlightedWorkflowIndex - 1 + count) % count;
+		} else if (e.key === 'Enter' && highlightedWorkflowIndex >= 0) {
+			e.preventDefault();
+			selectedWorkflow = workflowStore.workflows[highlightedWorkflowIndex];
+			showWorkflowDropdown = false;
+			highlightedWorkflowIndex = -1;
+		} else if (e.key === 'Escape') {
+			showWorkflowDropdown = false;
+			highlightedWorkflowIndex = -1;
+		}
+	}
+
+	// Reset highlight when dropdown opens/closes
+	$effect(() => {
+		if (!showWorkflowDropdown) {
+			highlightedWorkflowIndex = -1;
+		}
+	});
 </script>
 
 <!-- Hidden File Input -->
@@ -190,6 +220,7 @@
 		<button
 			onclick={() => chatStore.cancelReply()}
 			class="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground cursor-pointer"
+			tabindex={6}
 		>
 			<X class="h-3.5 w-3.5" />
 		</button>
@@ -247,6 +278,7 @@
 			size="icon"
 			onclick={handleImageAttach}
 			class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
+			tabindex={7}
 		>
 			<ImagePlus class="h-4 w-4" />
 		</Button>
@@ -263,6 +295,7 @@
 				rows={1}
 				disabled={chatStore.isResponding}
 				class="min-h-8 max-h-44 w-full resize-none border-0 bg-transparent px-2 py-1 text-sm shadow-none focus-visible:ring-0"
+				tabindex={8}
 			/>
 		</div>
 
@@ -276,6 +309,7 @@
 							size="icon"
 							onclick={openSettingsWithWorkflow}
 							class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
+							tabindex={9}
 						>
 							<SlidersHorizontal class="h-4 w-4" />
 						</Button>
@@ -292,7 +326,9 @@
 				<button
 					onclick={() => (showWorkflowDropdown = !showWorkflowDropdown)}
 					onblur={() => setTimeout(() => (showWorkflowDropdown = false), 150)}
+					onkeydown={handleWorkflowDropdownKeydown}
 					class="flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+					tabindex={10}
 				>
 					<Box class="h-3.5 w-3.5" />
 					{selectedWorkflow?.name || 'No Workflow'}
@@ -301,7 +337,13 @@
 
 				<!-- Dropup Menu -->
 				{#if showWorkflowDropdown}
-					<div class="absolute bottom-full left-0 z-50 mb-2 w-64 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+					<!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_no_static_element_interactions -->
+					<div
+						class="absolute bottom-full left-0 z-50 mb-2 w-64 overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+						onkeydown={handleWorkflowDropdownKeydown}
+						role="listbox"
+						tabindex={-1}
+					>
 						<!-- Workflow List: custom scrollbar that hides when not hovered -->
 						<div class="max-h-60 overflow-y-auto">
 							{#if workflowStore.workflows.length === 0}
@@ -309,14 +351,14 @@
 									No workflows yet
 								</p>
 							{:else}
-								{#each workflowStore.workflows as wf (wf.id)}
+								{#each workflowStore.workflows as wf, i (wf.id)}
 									<button
 										onclick={() => {
 											selectedWorkflow = wf;
 											showWorkflowDropdown = false;
 										}}
-										class="flex w-full flex-col gap-0.5 px-4 py-2.5 text-left transition-colors hover:bg-accent cursor-pointer"
-										class:bg-accent={selectedWorkflow?.id === wf.id}
+										class="flex w-full flex-col gap-0.5 px-4 py-2.5 text-left transition-colors cursor-pointer"
+										class:bg-accent={selectedWorkflow?.id === wf.id || highlightedWorkflowIndex === i}
 									>
 										<span class="text-sm font-medium text-foreground">{wf.name || 'Untitled Workflow'}</span>
 										<span class="text-xs text-muted-foreground truncate">{wf.base_url || 'No URL'}</span>
@@ -334,6 +376,7 @@
 				onclick={handleSend}
 				disabled={!canSend}
 				class="h-8 w-8 rounded-full cursor-pointer"
+				tabindex={11}
 			>
 				{#if chatStore.isResponding}
 					<LoaderCircle class="h-4 w-4 animate-spin cursor-wait" />

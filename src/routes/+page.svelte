@@ -34,8 +34,8 @@
 			<ChatView />
 		</main>
 
-		<!-- Theme Toggle: top right of screen -->
-		<div class="absolute top-3 right-3 z-50">
+		<!-- Theme Toggle: top right of screen (desktop only) -->
+		<div class="absolute top-3 right-3 z-50 hidden md:block">
 			<Tooltip>
 				<TooltipTrigger>
 					<Button
@@ -44,6 +44,7 @@
 						onclick={() => themeStore.toggle()}
 						class="h-9 w-9 cursor-pointer"
 						aria-label="Toggle theme"
+						tabindex={12}
 					>
 						{#if themeStore.isDark}
 							<Sun class="h-4 w-4" />

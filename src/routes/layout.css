@@ -151,6 +151,16 @@
 	}
 }
 
+/* Dark mode tooltip: gray background with bright text */
+.dark [data-slot="tooltip-content"] {
+	background-color: var(--color-muted);
+	color: var(--color-foreground);
+}
+
+.dark [data-slot="tooltip-content"] svg {
+	color: var(--color-foreground);
+}
+
 /* View Transition Theme Switch A->B */
 /* src: https://theme-toggle.rdsx.dev/ */
 
