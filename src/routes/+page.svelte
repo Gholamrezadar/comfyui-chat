@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { chatStore } from '$lib/stores/chat.store.svelte';
 	import { themeStore } from '$lib/stores/theme.store.svelte';
+	import { workflowStore } from '$lib/stores/workflow.store.svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import ChatView from '$lib/components/ChatView.svelte';
 
@@ -12,6 +13,7 @@
 	onMount(async () => {
 		themeStore.init();
 		await chatStore.init();
+		await workflowStore.init();
 		sidebarCollapsed = !chatStore.isSidebarOpen;
 		loaded = true;
 	});
