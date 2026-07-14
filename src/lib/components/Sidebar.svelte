@@ -6,6 +6,8 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 	import SettingsModal from '$lib/components/Settings.svelte';
+	import ShortcutsModal from '$lib/components/ShortcutsModal.svelte';
+	import { shortcuts, matchesShortcut, formatShortcut } from '$lib/shortcuts';
 	import { tick } from 'svelte';
 	import {
 		Search,
@@ -24,6 +26,7 @@
 	let searchInput = $state('');
 	let searchInputEl: HTMLInputElement | null = $state(null);
 	let showSettings = $state(false);
+	let showShortcuts = $state(false);
 
 	// Sync search query with the store
 	$effect(() => {
@@ -44,26 +47,31 @@
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
-		const ctrl = e.ctrlKey || e.metaKey;
-		const shift = e.shiftKey;
-		const key = e.key.toLowerCase();
-
-		if (ctrl && shift && key === 'o') {
+		if (matchesShortcut(e, shortcuts[0])) {
+			// Ctrl+Shift+O: New Chat
 			e.preventDefault();
 			chatStore.newConversation();
-		} else if (ctrl && shift && key === 's') {
+		} else if (matchesShortcut(e, shortcuts[3])) {
+			// Ctrl+Shift+S: Settings
 			e.preventDefault();
 			showSettings = true;
-		} else if (ctrl && shift && key === 'h') {
+		} else if (matchesShortcut(e, shortcuts[4])) {
+			// Ctrl+Shift+H: Toggle Theme
 			e.preventDefault();
 			themeStore.toggle();
-		} else if (ctrl && key === 'k') {
+		} else if (matchesShortcut(e, shortcuts[1])) {
+			// Ctrl+K: Search
 			e.preventDefault();
 			if (collapsed) collapsed = false;
 			focusSearchInput();
-		} else if (ctrl && key === '/') {
+		} else if (matchesShortcut(e, shortcuts[2])) {
+			// Ctrl+/: Toggle Sidebar
 			e.preventDefault();
 			toggleSidebar();
+		} else if (matchesShortcut(e, shortcuts[5])) {
+			// Ctrl+Shift+/: Keyboard Shortcuts
+			e.preventDefault();
+			showShortcuts = true;
 		}
 	}
 
@@ -161,26 +169,26 @@
 						<Plus class="h-4 w-4" />
 					</Button>
 				</TooltipTrigger>
-				<TooltipContent side="right">New Chat <span class="text-muted-foreground">Ctrl + Shift + O</span> </TooltipContent>
-			</Tooltip>
+			<TooltipContent side="right">New Chat <span class="text-muted-foreground">{formatShortcut(shortcuts[0])}</span> </TooltipContent>
+		</Tooltip>
 
-			<Tooltip>
-				<TooltipTrigger>
-					<Button
-						variant="ghost"
-						size="icon"
-						onclick={() => {
-							collapsed = false;
-							focusSearchInput();
-						}}
-						class="h-9 w-9 cursor-pointer"
-						aria-label="Search"
-					>
-						<Search class="h-4 w-4" />
-					</Button>
-				</TooltipTrigger>
-				<TooltipContent side="right">Search <span class="text-muted-foreground">Ctrl + K</span> </TooltipContent>
-			</Tooltip>
+		<Tooltip>
+			<TooltipTrigger>
+				<Button
+					variant="ghost"
+					size="icon"
+					onclick={() => {
+						collapsed = false;
+						focusSearchInput();
+					}}
+					class="h-9 w-9 cursor-pointer"
+					aria-label="Search"
+				>
+					<Search class="h-4 w-4" />
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent side="right">Search <span class="text-muted-foreground">{formatShortcut(shortcuts[1])}</span> </TooltipContent>
+		</Tooltip>
 
 		{:else}
 			<!-- Expanded Actions -->
@@ -288,9 +296,9 @@
 						<Settings class="h-4 w-4" />
 					</Button>
 				</TooltipTrigger>
-				<TooltipContent side="right">Settings
-						<span class="text-muted-foreground">Ctrl + Shift + S</span>
-				</TooltipContent>
+			<TooltipContent side="right">Settings
+					<span class="text-muted-foreground">{formatShortcut(shortcuts[3])}</span>
+			</TooltipContent>
 			</Tooltip>
 		{:else}
 			<!-- Expanded Settings -->
@@ -304,3 +312,4 @@
 </aside>
 
 <SettingsModal bind:open={showSettings} />
+<ShortcutsModal bind:open={showShortcuts} />

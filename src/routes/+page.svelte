@@ -5,6 +5,7 @@
 	import { workflowStore } from '$lib/stores/workflow.store.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
+	import { shortcuts, formatShortcut } from '$lib/shortcuts';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import ChatView from '$lib/components/ChatView.svelte';
 	import { Sun, Moon } from 'lucide-svelte';
@@ -51,10 +52,10 @@
 						{/if}
 					</Button>
 				</TooltipTrigger>
-				<TooltipContent>
-					{themeStore.isDark ? 'Light mode' : 'Dark mode'}
-					<span class="text-muted-foreground">Ctrl + Shift + H</span>
-				</TooltipContent>
+			<TooltipContent>
+				{themeStore.isDark ? 'Light mode' : 'Dark mode'}
+				<span class="text-muted-foreground">{formatShortcut(shortcuts[4])}</span>
+			</TooltipContent>
 			</Tooltip>
 		</div>
 	</div>
