@@ -35,7 +35,7 @@
 		</div>
 	{:else}
 		<!-- Active Conversation Header -->
-		<div class="flex items-center px-6 py-3">
+		<div class="flex items-center px-6 py-3 border-b border-border">
 			<h2 class="truncate text-sm font-medium text-foreground">
 				{chatStore.activeConversation.title}
 			</h2>

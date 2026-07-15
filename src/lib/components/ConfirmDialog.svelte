@@ -47,8 +47,7 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if open}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
-		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-background/10 p-4 backdrop-blur-sm">
 		<div
 			class="flex w-full max-w-sm flex-col rounded-2xl border border-border bg-card shadow-lg"
 			onclick={(e) => e.stopPropagation()}
@@ -60,7 +59,7 @@
 			id="confirm-dialog"
 		>
 			<!-- Header -->
-			<div class="flex items-center justify-between border-b border-border px-6 py-4">
+			<div class="flex items-center justify-between  px-6 py-4">
 				<div class="flex items-center gap-2">
 					<AlertTriangle class="h-4 w-4 text-destructive" />
 					<h2 class="text-lg font-semibold text-foreground">{title}</h2>
@@ -83,7 +82,7 @@
 			</div>
 
 			<!-- Footer -->
-			<div class="flex items-center justify-end gap-2 border-t border-border px-6 py-4">
+			<div class="flex items-center justify-end gap-2 px-6 py-4">
 				<Button
 					variant="outline"
 					class="cursor-pointer"

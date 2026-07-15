@@ -35,7 +35,7 @@
 		</main>
 
 		<!-- Theme Toggle: top right of screen (desktop only) -->
-		<div class="absolute top-3 right-3 z-50 hidden md:block">
+		<div class="absolute top-1 right-3 z-50 hidden md:block">
 			<Tooltip>
 				<TooltipTrigger>
 					<Button
