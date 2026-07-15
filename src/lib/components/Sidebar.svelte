@@ -128,11 +128,12 @@
 	class:md:w-14={collapsed}
 >
 	<!-- Sidebar Toggle Button -->
+	<div class="absolute top-2.75 right-3 z-20">
 	<Tooltip>
 		<TooltipTrigger>
 			<button
 				onclick={toggleSidebar}
-				class="absolute top-4 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-accent"
+				class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-accent"
 				class:right-3={!collapsed}
 				class:left-3={collapsed}
 				aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -151,6 +152,7 @@
 			<span class="text-muted-foreground">{formatShortcut(shortcuts[2])}</span>
 		</TooltipContent>
 	</Tooltip>
+	</div>
 
 	<!-- Sidebar Header -->
 	<div class="flex items-center gap-2 px-3 py-3" class:justify-center={collapsed}>
