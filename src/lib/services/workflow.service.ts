@@ -1,10 +1,16 @@
 import Dexie, { type Table } from 'dexie';
 
+export interface WorkflowOverride {
+	path: string;
+	value: string;
+}
+
 export interface Workflow {
 	id: string;
 	name: string;
 	base_url: string;
 	workflow: string;
+	overrides: WorkflowOverride[];
 	createdAt: number;
 	updatedAt: number;
 }
@@ -15,6 +21,9 @@ class WorkflowDatabase extends Dexie {
 	constructor() {
 		super('comfyui-chat-workflows');
 		this.version(1).stores({
+			workflows: 'id, updatedAt'
+		});
+		this.version(2).stores({
 			workflows: 'id, updatedAt'
 		});
 	}
@@ -57,6 +66,7 @@ export function createWorkflow(): Workflow {
 		name: '',
 		base_url: '',
 		workflow: '',
+		overrides: [],
 		createdAt: Date.now(),
 		updatedAt: Date.now()
 	};

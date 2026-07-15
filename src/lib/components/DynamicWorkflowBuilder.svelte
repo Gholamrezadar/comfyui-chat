@@ -2,13 +2,16 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { X, Plus, ChevronDown } from 'lucide-svelte';
+	import type { WorkflowOverride } from '$lib/services/workflow.service';
 
 	let {
 		workflowText = '',
-		onOverrideChange
+		initialOverrides = [],
+		onOverridesChange
 	}: {
 		workflowText: string;
-		onOverrideChange?: (json: string | null) => void;
+		initialOverrides?: WorkflowOverride[];
+		onOverridesChange?: (overrides: WorkflowOverride[]) => void;
 	} = $props();
 
 	interface OverrideRow {
@@ -16,8 +19,8 @@
 		path: string;
 		value: string;
 	}
-	let rows = $state<OverrideRow[]>([]);
-	let idSeq = $state(0);
+	let rows = $state<OverrideRow[]>(initialOverrides.map((o, i) => ({ id: i, path: o.path, value: o.value })));
+	let idSeq = $state(initialOverrides.length);
 	let openPresetRowId = $state<number | null>(null);
 
 	const PRESET_VALUES = ['IMAGE1', 'IMAGE2', 'IMAGE3', 'IMAGE4'];
@@ -159,12 +162,10 @@
 
 	$effect(() => {
 		for (const r of rows) {
+			void r.path;
 			void r.value;
 		}
-		if (rows.length > 0) {
-			generate();
-			onOverrideChange?.(generate());
-		}
+		onOverridesChange?.(rows.map((r) => ({ path: r.path, value: r.value })));
 	});
 </script>
 
@@ -173,7 +174,8 @@
 <div class="flex flex-col gap-1.5">
 	<label class="text-sm font-medium text-foreground">
 		Overrides
-		<span class="text-xs font-normal text-muted-foreground">(double-click a field to override)</span>
+		<span class="text-xs font-normal text-muted-foreground">(double-click a field to override)</span
+		>
 	</label>
 	{#if rows.length > 0}
 		<div class="flex flex-col gap-1.5">
@@ -224,15 +226,15 @@
 			{/each}
 		</div>
 	{/if}
-	<div class="w-full flex justify-center items-center gap-1.5">
-	<Button
-		variant="ghost"
-		size="sm"
-		class="w-32 cursor-pointer text-xs text-muted-foreground hover:text-foreground"
-		onclick={() => addRow()}
-	>
-		<Plus class="mr-1 h-3 w-3" />
-		Add override
-	</Button>
+	<div class="flex w-full items-center justify-center gap-1.5">
+		<Button
+			variant="ghost"
+			size="sm"
+			class="w-32 cursor-pointer text-xs text-muted-foreground hover:text-foreground"
+			onclick={() => addRow()}
+		>
+			<Plus class="mr-1 h-3 w-3" />
+			Add override
+		</Button>
 	</div>
 </div>

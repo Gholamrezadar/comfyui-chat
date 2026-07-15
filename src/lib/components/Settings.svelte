@@ -5,7 +5,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { workflowStore } from '$lib/stores/workflow.store.svelte';
 	import { X, Plus, Trash2 } from 'lucide-svelte';
-	import type { Workflow } from '$lib/services/workflow.service';
+	import type { Workflow, WorkflowOverride } from '$lib/services/workflow.service';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import DynamicWorkflowBuilder from '$lib/components/DynamicWorkflowBuilder.svelte';
 	import { toast } from 'svelte-sonner';
@@ -18,6 +18,7 @@
 	let editName = $state('');
 	let editBaseUrl = $state('');
 	let editWorkflowText = $state('');
+	let editOverrides = $state<WorkflowOverride[]>([]);
 	let errors = $state<{ name?: string; base_url?: string; workflow?: string }>({});
 	let showDeleteConfirm = $state(false);
 
@@ -28,6 +29,7 @@
 			editName = wf.name;
 			editBaseUrl = wf.base_url;
 			editWorkflowText = wf.workflow;
+			editOverrides = (wf.overrides ?? []).map((o) => ({ path: o.path, value: o.value }));
 			errors = {};
 		}
 	});
@@ -76,6 +78,7 @@
 		editName = '';
 		editBaseUrl = '';
 		editWorkflowText = '';
+		editOverrides = [];
 		errors = {};
 	}
 
@@ -83,12 +86,16 @@
 		if (!validate()) return;
 		const wf = workflowStore.activeWorkflow;
 		if (!wf) return;
+		const overridesToSave = editOverrides.map((o) => ({ path: o.path, value: o.value }));
 		try {
 			await workflowStore.saveWorkflow({
-				...wf,
+				id: wf.id,
 				name: editName.trim(),
 				base_url: editBaseUrl.trim(),
-				workflow: editWorkflowText
+				workflow: editWorkflowText,
+				overrides: overridesToSave,
+				createdAt: wf.createdAt,
+				updatedAt: wf.updatedAt
 			});
 			toast.success('Workflow saved');
 		} catch {
@@ -154,7 +161,8 @@
 		return (
 			editName.trim() !== wf.name ||
 			editBaseUrl.trim() !== wf.base_url ||
-			editWorkflowText !== wf.workflow
+			editWorkflowText !== wf.workflow ||
+			JSON.stringify(editOverrides) !== JSON.stringify(wf.overrides ?? [])
 		);
 	});
 </script>
@@ -300,11 +308,15 @@
 									{/if}
 								</div>
 
-								<!-- Workflow Overrides -->
-								<DynamicWorkflowBuilder
-									bind:this={dynamicBuilder}
-									workflowText={editWorkflowText}
-								/>
+							<!-- Workflow Overrides -->
+						{#key workflowStore.activeId}
+							<DynamicWorkflowBuilder
+								bind:this={dynamicBuilder}
+								workflowText={editWorkflowText}
+								initialOverrides={editOverrides}
+								onOverridesChange={(o) => (editOverrides = o.map((r) => ({ ...r })))}
+							/>
+						{/key}
 								<div class="flex justify-end">
 									<Button onclick={handleSave} class="cursor-pointer px-6" tabindex={4}>Save</Button
 									>
@@ -336,6 +348,7 @@
 			editName = next.name;
 			editBaseUrl = next.base_url;
 			editWorkflowText = next.workflow;
+			editOverrides = (next.overrides ?? []).map((o) => ({ path: o.path, value: o.value }));
 		}
 	}}
 />
