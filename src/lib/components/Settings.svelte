@@ -17,6 +17,162 @@
 	let errors = $state<{ name?: string; base_url?: string; workflow?: string }>({});
 	let showDeleteConfirm = $state(false);
 
+	// --- Workflow override inputs ---
+	interface OverrideRow {
+		id: number;
+		path: string;
+		value: string;
+	}
+	let overrideRows = $state<OverrideRow[]>([]);
+	let overrideIdSeq = $state(0);
+
+	function addOverrideRow(path = '') {
+		overrideRows = [...overrideRows, { id: overrideIdSeq++, path, value: '' }];
+	}
+
+	function removeOverrideRow(id: number) {
+		overrideRows = overrideRows.filter((r) => r.id !== id);
+	}
+
+	function pathAtOffset(jsonText: string, offset: number): string | null {
+		let i = 0;
+		const pathStack: (string | number)[] = [];
+		const tokens: { path: string; start: number }[] = [];
+
+		function skipWs() {
+			while (i < jsonText.length && /\s/.test(jsonText[i])) i++;
+		}
+
+		function readString(): { start: number; end: number } {
+			const start = i;
+			i++;
+			while (i < jsonText.length) {
+				if (jsonText[i] === '\\') {
+					i += 2;
+					continue;
+				}
+				if (jsonText[i] === '"') {
+					i++;
+					break;
+				}
+				i++;
+			}
+			return { start, end: i };
+		}
+
+		function skipValue() {
+			skipWs();
+			const ch = jsonText[i];
+			if (ch === '"') {
+				readString();
+			} else if (ch === '{') {
+				readObject();
+			} else if (ch === '[') {
+				readArray();
+			} else {
+				while (i < jsonText.length && !',}]'.includes(jsonText[i]) && !/\s/.test(jsonText[i])) i++;
+			}
+		}
+
+		function readObject() {
+			i++;
+			skipWs();
+			while (i < jsonText.length && jsonText[i] !== '}') {
+				skipWs();
+				if (jsonText[i] !== '"') {
+					i++;
+					continue;
+				}
+				const { start, end } = readString();
+				const key = jsonText.slice(start + 1, end - 1);
+				pathStack.push(key);
+				tokens.push({ path: pathStack.join('.'), start });
+				skipWs();
+				if (jsonText[i] === ':') i++;
+				skipWs();
+				skipValue();
+				skipWs();
+				if (jsonText[i] === ',') i++;
+				skipWs();
+				pathStack.pop();
+			}
+			if (jsonText[i] === '}') i++;
+		}
+
+		function readArray() {
+			i++;
+			let idx = 0;
+			skipWs();
+			while (i < jsonText.length && jsonText[i] !== ']') {
+				pathStack.push(idx);
+				skipValue();
+				pathStack.pop();
+				idx++;
+				skipWs();
+				if (jsonText[i] === ',') i++;
+				skipWs();
+			}
+			if (jsonText[i] === ']') i++;
+		}
+
+		try {
+			skipWs();
+			if (jsonText[i] === '{') readObject();
+			else if (jsonText[i] === '[') readArray();
+		} catch {
+			return null;
+		}
+
+		let result: { path: string; start: number } | null = null;
+		for (const tok of tokens) {
+			if (tok.start <= offset) result = tok;
+			if (tok.start > offset) break;
+		}
+		return result?.path ?? null;
+	}
+
+	function setDeep(obj: Record<string, unknown>, path: string, value: unknown) {
+		const parts = path.split('.');
+		let cur: Record<string, unknown> = obj;
+		for (let j = 0; j < parts.length - 1; j++) {
+			if (!(parts[j] in cur)) cur[parts[j]] = {};
+			cur = cur[parts[j]] as Record<string, unknown>;
+		}
+		cur[parts.at(-1)!] = value;
+	}
+
+	function onWorkflowDblClick(e: MouseEvent) {
+		const textarea = e.target as HTMLTextAreaElement;
+		const offset = textarea.selectionStart;
+		const path = pathAtOffset(editWorkflowText, offset);
+		if (path) addOverrideRow(path);
+	}
+
+	function generateOverride(): string | null {
+		try {
+			const parsed = JSON.parse(editWorkflowText);
+			for (const r of overrideRows) {
+				if (!r.path) continue;
+				setDeep(parsed, r.path, r.value);
+			}
+			const result = JSON.stringify(parsed, null, 2);
+			console.log('[workflow-override]', result);
+			return result;
+		} catch {
+			return null;
+		}
+	}
+
+	// Log to console whenever a row value changes
+	$effect(() => {
+		for (const r of overrideRows) {
+			void r.value;
+		}
+		if (overrideRows.length > 0) {
+			generateOverride();
+		}
+	});
+
 	// When a workflow is selected, load it into the editor fields
 	$effect(() => {
 		const wf = workflowStore.activeWorkflow;
@@ -34,7 +190,8 @@
 			newErrors.name = 'Name is required';
 		} else {
 			const duplicate = workflowStore.workflows.some(
-				(w) => w.id !== workflowStore.activeId && w.name.toLowerCase() === editName.trim().toLowerCase()
+				(w) =>
+					w.id !== workflowStore.activeId && w.name.toLowerCase() === editName.trim().toLowerCase()
 			);
 			if (duplicate) newErrors.name = 'Name already exists';
 		}
@@ -110,7 +267,12 @@
 			open = false;
 		}
 		// Enter to save when not focused on textarea (allow newlines in textarea with Enter)
-		else if (e.key === 'Enter' && !e.shiftKey && workflowStore.activeWorkflow && (e.target as HTMLElement)?.tagName !== 'TEXTAREA') {
+		else if (
+			e.key === 'Enter' &&
+			!e.shiftKey &&
+			workflowStore.activeWorkflow &&
+			(e.target as HTMLElement)?.tagName !== 'TEXTAREA'
+		) {
 			e.preventDefault();
 			handleSave();
 		}
@@ -129,9 +291,7 @@
 	// Whether the active workflow is newly created (not yet persisted in IndexedDB)
 	const isNewWorkflow = $derived(
 		workflowStore.activeId !== null &&
-			!workflowStore.workflows.some(
-				(w) => w.id === workflowStore.activeId && w.name !== ''
-			)
+			!workflowStore.workflows.some((w) => w.id === workflowStore.activeId && w.name !== '')
 	);
 
 	// Whether the current form fields differ from the saved workflow data
@@ -149,9 +309,11 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if open}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-0 backdrop-blur-sm md:p-4">
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-0 backdrop-blur-sm md:p-4"
+	>
 		<div
-			class="flex h-full w-full flex-row bg-card md:h-[70vh] md:max-w-3xl md:rounded-2xl md:border md:border-border md:shadow-lg overflow-hidden"
+			class="flex h-full w-full flex-row overflow-hidden bg-card md:h-[70vh] md:max-w-3xl md:rounded-2xl md:border md:border-border md:shadow-lg"
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={handleDialogKeydown}
 			role="dialog"
@@ -181,18 +343,16 @@
 				<div class="min-h-0 flex-1">
 					<ScrollArea class="h-full">
 						{#if workflowStore.workflows.length === 0}
-							<p class="px-4 py-4 text-center text-xs text-muted-foreground">
-								No workflows yet
-							</p>
+							<p class="px-4 py-4 text-center text-xs text-muted-foreground">No workflows yet</p>
 						{:else}
 							<div class="flex flex-col gap-0.5 p-2">
-						{#each workflowStore.workflows as wf (wf.id)}
-								<button
-									onclick={() => handleSelect(wf.id)}
-									class="w-full cursor-pointer rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
-									class:bg-accent={workflowStore.activeId === wf.id}
-									tabindex={-1}
-								>
+								{#each workflowStore.workflows as wf (wf.id)}
+									<button
+										onclick={() => handleSelect(wf.id)}
+										class="w-full cursor-pointer rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
+										class:bg-accent={workflowStore.activeId === wf.id}
+										tabindex={-1}
+									>
 										<p class="truncate font-medium">
 											{wf.name || 'Untitled Workflow'}
 										</p>
@@ -238,55 +398,104 @@
 							<div class="flex flex-col gap-4 p-4">
 								<div class="flex flex-col gap-1.5">
 									<label for="wf-name" class="text-sm font-medium text-foreground">Name</label>
-								<Input
-									id="wf-name"
-									bind:value={editName}
-									placeholder="Enter workflow name..."
-									class={errors.name ? 'border-destructive' : ''}
-									tabindex={1}
-								/>
+									<Input
+										id="wf-name"
+										bind:value={editName}
+										placeholder="Enter workflow name..."
+										class={errors.name ? 'border-destructive' : ''}
+										tabindex={1}
+									/>
 									{#if errors.name}
 										<p class="text-xs text-destructive">{errors.name}</p>
 									{/if}
 								</div>
 								<div class="flex flex-col gap-1.5">
-									<label for="wf-base-url" class="text-sm font-medium text-foreground">Base URL</label>
-								<Input
-									id="wf-base-url"
-									bind:value={editBaseUrl}
-									placeholder="http://127.0.0.1:8188"
-									class={errors.base_url ? 'border-destructive' : ''}
-									tabindex={2}
-								/>
+									<label for="wf-base-url" class="text-sm font-medium text-foreground"
+										>Base URL</label
+									>
+									<Input
+										id="wf-base-url"
+										bind:value={editBaseUrl}
+										placeholder="http://127.0.0.1:8188"
+										class={errors.base_url ? 'border-destructive' : ''}
+										tabindex={2}
+									/>
 									{#if errors.base_url}
 										<p class="text-xs text-destructive">{errors.base_url}</p>
 									{/if}
 								</div>
 								<div class="flex flex-1 flex-col gap-1.5">
-									<label for="wf-workflow" class="text-sm font-medium text-foreground">Workflow</label>
-								<Textarea
-									id="wf-workflow"
-									bind:value={editWorkflowText}
-									placeholder="Paste your workflow JSON here..."
-									class="flex-1 font-mono text-xs {errors.workflow ? 'border-destructive' : ''}"
-									tabindex={3}
-								/>
+									<label for="wf-workflow" class="text-sm font-medium text-foreground"
+										>Workflow</label
+									>
+									<Textarea
+										id="wf-workflow"
+										bind:value={editWorkflowText}
+										placeholder="Paste your workflow JSON here..."
+										class="flex-1 font-mono text-xs {errors.workflow ? 'border-destructive' : ''}"
+										tabindex={3}
+										ondblclick={onWorkflowDblClick}
+									/>
 									{#if errors.workflow}
 										<p class="text-xs text-destructive">{errors.workflow}</p>
 									{/if}
 								</div>
-						<div class="flex justify-end">
-						<Button onclick={handleSave} class="cursor-pointer px-6" tabindex={4}>Save</Button>
-					</div>
+
+								<!-- Workflow Overrides -->
+								<div class="flex flex-col gap-1.5">
+									<label class="text-sm font-medium text-foreground">
+										Overrides
+										<span class="text-xs font-normal text-muted-foreground"
+											>(double-click JSON to add)</span
+										>
+									</label>
+									{#if overrideRows.length > 0}
+										<div class="flex flex-col gap-1.5">
+											{#each overrideRows as r (r.id)}
+												<div class="flex items-center gap-1.5">
+													<Input
+														bind:value={r.path}
+														placeholder="path"
+														class="flex-1 font-mono text-xs"
+													/>
+													<Input
+														bind:value={r.value}
+														placeholder="value"
+														class="flex-1 font-mono text-xs"
+													/>
+													<Button
+														variant="ghost"
+														size="icon"
+														class="h-7 w-7 shrink-0 cursor-pointer text-muted-foreground hover:text-destructive"
+														onclick={() => removeOverrideRow(r.id)}
+													>
+														<X class="h-3.5 w-3.5" />
+													</Button>
+												</div>
+											{/each}
+										</div>
+									{/if}
+									<Button
+										variant="ghost"
+										size="sm"
+										class="w-full cursor-pointer text-xs text-muted-foreground hover:text-foreground"
+										onclick={() => addOverrideRow()}
+									>
+										<Plus class="mr-1 h-3 w-3" />
+										Add override
+									</Button>
+								</div>
+								<div class="flex justify-end">
+									<Button onclick={handleSave} class="cursor-pointer px-6" tabindex={4}>Save</Button
+									>
+								</div>
 							</div>
 						</ScrollArea>
 					</div>
 				{:else}
 					<!-- Empty State -->
 					<div class="flex flex-1 items-center justify-center p-6">
-						<p class="text-sm text-muted-foreground">
-							Select a workflow or create a new one
-						</p>
+						<p class="text-sm text-muted-foreground">Select a workflow or create a new one</p>
 					</div>
 				{/if}
 			</div>
