@@ -3,6 +3,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 
 	import { TooltipProvider } from '$lib/components/ui/tooltip';
+	import { Toaster } from 'svelte-sonner';
 
 	let { children } = $props();
 </script>
@@ -17,3 +18,5 @@
 <TooltipProvider>
 	{@render children()}
 </TooltipProvider>
+
+<Toaster richColors />

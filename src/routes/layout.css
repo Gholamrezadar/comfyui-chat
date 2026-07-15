@@ -152,12 +152,12 @@
 }
 
 /* Dark mode tooltip: gray background with bright text */
-.dark [data-slot="tooltip-content"] {
+.dark [data-slot='tooltip-content'] {
 	background-color: var(--color-muted);
 	color: var(--color-foreground);
 }
 
-.dark [data-slot="tooltip-content"] svg {
+.dark [data-slot='tooltip-content'] svg {
 	color: var(--color-foreground);
 }
 
@@ -165,25 +165,26 @@
 /* src: https://theme-toggle.rdsx.dev/ */
 
 ::view-transition-group(root) {
-  animation-timing-function: var(--expo-out);
+	animation-timing-function: var(--expo-out);
 }
 
 ::view-transition-new(root) {
-  mask: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><defs><filter id="blur"><feGaussianBlur stdDeviation="2"/></filter></defs><circle cx="0" cy="0" r="18" fill="white" filter="url(%23blur)"/></svg>') top left / 0 no-repeat;
-  mask-origin: content-box;
-  animation: scale 0.7s;
-  animation-fill-mode: both;
-  transform-origin: top left;
+	mask: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><defs><filter id="blur"><feGaussianBlur stdDeviation="2"/></filter></defs><circle cx="0" cy="0" r="18" fill="white" filter="url(%23blur)"/></svg>')
+		top left / 0 no-repeat;
+	mask-origin: content-box;
+	animation: scale 0.7s;
+	animation-fill-mode: both;
+	transform-origin: top left;
 }
 
 ::view-transition-old(root),
-  .dark::view-transition-old(root) {
-  animation: none;
-  animation-fill-mode: both;
+.dark::view-transition-old(root) {
+	animation: none;
+	animation-fill-mode: both;
 }
 
 @keyframes scale {
-  to {
-    mask-size: 350vmax;
-  }
+	to {
+		mask-size: 350vmax;
+	}
 }

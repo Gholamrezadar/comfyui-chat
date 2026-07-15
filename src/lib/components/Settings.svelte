@@ -7,8 +7,12 @@
 	import { X, Plus, Trash2 } from 'lucide-svelte';
 	import type { Workflow } from '$lib/services/workflow.service';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import DynamicWorkflowBuilder from '$lib/components/DynamicWorkflowBuilder.svelte';
+	import { toast } from 'svelte-sonner';
 
 	let { open = $bindable(false) }: { open: boolean } = $props();
+
+	let dynamicBuilder: DynamicWorkflowBuilder | undefined = $state();
 
 	// --- Form state ---
 	let editName = $state('');
@@ -16,162 +20,6 @@
 	let editWorkflowText = $state('');
 	let errors = $state<{ name?: string; base_url?: string; workflow?: string }>({});
 	let showDeleteConfirm = $state(false);
-
-	// --- Workflow override inputs ---
-	interface OverrideRow {
-		id: number;
-		path: string;
-		value: string;
-	}
-	let overrideRows = $state<OverrideRow[]>([]);
-	let overrideIdSeq = $state(0);
-
-	function addOverrideRow(path = '') {
-		overrideRows = [...overrideRows, { id: overrideIdSeq++, path, value: '' }];
-	}
-
-	function removeOverrideRow(id: number) {
-		overrideRows = overrideRows.filter((r) => r.id !== id);
-	}
-
-	function pathAtOffset(jsonText: string, offset: number): string | null {
-		let i = 0;
-		const pathStack: (string | number)[] = [];
-		const tokens: { path: string; start: number }[] = [];
-
-		function skipWs() {
-			while (i < jsonText.length && /\s/.test(jsonText[i])) i++;
-		}
-
-		function readString(): { start: number; end: number } {
-			const start = i;
-			i++;
-			while (i < jsonText.length) {
-				if (jsonText[i] === '\\') {
-					i += 2;
-					continue;
-				}
-				if (jsonText[i] === '"') {
-					i++;
-					break;
-				}
-				i++;
-			}
-			return { start, end: i };
-		}
-
-		function skipValue() {
-			skipWs();
-			const ch = jsonText[i];
-			if (ch === '"') {
-				readString();
-			} else if (ch === '{') {
-				readObject();
-			} else if (ch === '[') {
-				readArray();
-			} else {
-				while (i < jsonText.length && !',}]'.includes(jsonText[i]) && !/\s/.test(jsonText[i])) i++;
-			}
-		}
-
-		function readObject() {
-			i++;
-			skipWs();
-			while (i < jsonText.length && jsonText[i] !== '}') {
-				skipWs();
-				if (jsonText[i] !== '"') {
-					i++;
-					continue;
-				}
-				const { start, end } = readString();
-				const key = jsonText.slice(start + 1, end - 1);
-				pathStack.push(key);
-				tokens.push({ path: pathStack.join('.'), start });
-				skipWs();
-				if (jsonText[i] === ':') i++;
-				skipWs();
-				skipValue();
-				skipWs();
-				if (jsonText[i] === ',') i++;
-				skipWs();
-				pathStack.pop();
-			}
-			if (jsonText[i] === '}') i++;
-		}
-
-		function readArray() {
-			i++;
-			let idx = 0;
-			skipWs();
-			while (i < jsonText.length && jsonText[i] !== ']') {
-				pathStack.push(idx);
-				skipValue();
-				pathStack.pop();
-				idx++;
-				skipWs();
-				if (jsonText[i] === ',') i++;
-				skipWs();
-			}
-			if (jsonText[i] === ']') i++;
-		}
-
-		try {
-			skipWs();
-			if (jsonText[i] === '{') readObject();
-			else if (jsonText[i] === '[') readArray();
-		} catch {
-			return null;
-		}
-
-		let result: { path: string; start: number } | null = null;
-		for (const tok of tokens) {
-			if (tok.start <= offset) result = tok;
-			if (tok.start > offset) break;
-		}
-		return result?.path ?? null;
-	}
-
-	function setDeep(obj: Record<string, unknown>, path: string, value: unknown) {
-		const parts = path.split('.');
-		let cur: Record<string, unknown> = obj;
-		for (let j = 0; j < parts.length - 1; j++) {
-			if (!(parts[j] in cur)) cur[parts[j]] = {};
-			cur = cur[parts[j]] as Record<string, unknown>;
-		}
-		cur[parts.at(-1)!] = value;
-	}
-
-	function onWorkflowDblClick(e: MouseEvent) {
-		const textarea = e.target as HTMLTextAreaElement;
-		const offset = textarea.selectionStart;
-		const path = pathAtOffset(editWorkflowText, offset);
-		if (path) addOverrideRow(path);
-	}
-
-	function generateOverride(): string | null {
-		try {
-			const parsed = JSON.parse(editWorkflowText);
-			for (const r of overrideRows) {
-				if (!r.path) continue;
-				setDeep(parsed, r.path, r.value);
-			}
-			const result = JSON.stringify(parsed, null, 2);
-			console.log('[workflow-override]', result);
-			return result;
-		} catch {
-			return null;
-		}
-	}
-
-	// Log to console whenever a row value changes
-	$effect(() => {
-		for (const r of overrideRows) {
-			void r.value;
-		}
-		if (overrideRows.length > 0) {
-			generateOverride();
-		}
-	});
 
 	// When a workflow is selected, load it into the editor fields
 	$effect(() => {
@@ -235,12 +83,17 @@
 		if (!validate()) return;
 		const wf = workflowStore.activeWorkflow;
 		if (!wf) return;
-		await workflowStore.saveWorkflow({
-			...wf,
-			name: editName.trim(),
-			base_url: editBaseUrl.trim(),
-			workflow: editWorkflowText
-		});
+		try {
+			await workflowStore.saveWorkflow({
+				...wf,
+				name: editName.trim(),
+				base_url: editBaseUrl.trim(),
+				workflow: editWorkflowText
+			});
+			toast.success('Workflow saved');
+		} catch {
+			toast.error('Failed to save workflow');
+		}
 	}
 
 	function handleDelete() {
@@ -424,7 +277,7 @@
 										<p class="text-xs text-destructive">{errors.base_url}</p>
 									{/if}
 								</div>
-								<div class="flex flex-1 flex-col gap-1.5">
+								<div class="flex flex-col gap-1.5">
 									<label for="wf-workflow" class="text-sm font-medium text-foreground"
 										>Workflow</label
 									>
@@ -432,9 +285,15 @@
 										id="wf-workflow"
 										bind:value={editWorkflowText}
 										placeholder="Paste your workflow JSON here..."
-										class="flex-1 font-mono text-xs {errors.workflow ? 'border-destructive' : ''}"
+										rows={10}
+										class="field-sizing-fixed font-mono text-xs {errors.workflow
+											? 'border-destructive'
+											: ''}"
 										tabindex={3}
-										ondblclick={onWorkflowDblClick}
+										ondblclick={(e) => {
+											const textarea = e.target as HTMLTextAreaElement;
+											dynamicBuilder?.addRowAtOffset(textarea.selectionStart);
+										}}
 									/>
 									{#if errors.workflow}
 										<p class="text-xs text-destructive">{errors.workflow}</p>
@@ -442,49 +301,10 @@
 								</div>
 
 								<!-- Workflow Overrides -->
-								<div class="flex flex-col gap-1.5">
-									<label class="text-sm font-medium text-foreground">
-										Overrides
-										<span class="text-xs font-normal text-muted-foreground"
-											>(double-click JSON to add)</span
-										>
-									</label>
-									{#if overrideRows.length > 0}
-										<div class="flex flex-col gap-1.5">
-											{#each overrideRows as r (r.id)}
-												<div class="flex items-center gap-1.5">
-													<Input
-														bind:value={r.path}
-														placeholder="path"
-														class="flex-1 font-mono text-xs"
-													/>
-													<Input
-														bind:value={r.value}
-														placeholder="value"
-														class="flex-1 font-mono text-xs"
-													/>
-													<Button
-														variant="ghost"
-														size="icon"
-														class="h-7 w-7 shrink-0 cursor-pointer text-muted-foreground hover:text-destructive"
-														onclick={() => removeOverrideRow(r.id)}
-													>
-														<X class="h-3.5 w-3.5" />
-													</Button>
-												</div>
-											{/each}
-										</div>
-									{/if}
-									<Button
-										variant="ghost"
-										size="sm"
-										class="w-full cursor-pointer text-xs text-muted-foreground hover:text-foreground"
-										onclick={() => addOverrideRow()}
-									>
-										<Plus class="mr-1 h-3 w-3" />
-										Add override
-									</Button>
-								</div>
+								<DynamicWorkflowBuilder
+									bind:this={dynamicBuilder}
+									workflowText={editWorkflowText}
+								/>
 								<div class="flex justify-end">
 									<Button onclick={handleSave} class="cursor-pointer px-6" tabindex={4}>Save</Button
 									>
