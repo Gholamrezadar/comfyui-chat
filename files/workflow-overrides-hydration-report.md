@@ -54,69 +54,65 @@ Since the builder only captures `initialOverrides` when it is created, it kept
 those previous overrides until the next workflow selection. This produced the
 one-step-behind behavior.
 
-## First fix attempt and follow-up issue
+## Rejected fix: a manual builder reset key
 
-The first fix introduced a `builderKey` counter and incremented it inside the
-workflow hydration effect after assigning the form fields:
+An initial workaround used a separate `builderKey` value and changed it from the
+workflow hydration effect to force a new builder instance.
+
+A counter version used this statement:
 
 ```ts
 builderKey += 1;
 ```
 
-This correctly delayed builder recreation until after the new overrides had
-been copied into `editOverrides`. However, it introduced this Svelte runtime
-error:
+That produced this Svelte runtime error:
 
 ```text
 effect_update_depth_exceeded
 Maximum update depth exceeded
 ```
 
-The hydration effect read `builderKey` as part of `builderKey += 1` and then
-wrote it. In Svelte's reactive runtime, reading and writing the same state from
-an effect makes that effect a dependency of its own update, causing an infinite
-update loop.
+`+=` reads the current reactive value and writes it back. Doing that inside an
+`$effect` makes the effect depend on state that it updates, creating a reactive
+update loop. Replacing the counter with a new object avoided the loop, but a
+manual reset token did not express the actual lifecycle relationship.
 
-## Final fix
+## Final fix: key by workflow identity
 
-`Settings.svelte` now uses a reactive object identity as the builder key:
-
-```ts
-let builderKey = $state({});
-```
-
-After the selected workflow's form state has been hydrated, the effect assigns a
-new object:
-
-```ts
-builderKey = {};
-```
-
-The template keys the builder from that value:
+The builder lifecycle is tied to the workflow it edits, so its key is now the
+workflow's stable domain identity:
 
 ```svelte
-{#key builderKey}
+{#key workflowStore.activeWorkflow.id}
     <DynamicWorkflowBuilder
         workflowText={editWorkflowText}
-        initialOverrides={editOverrides}
+        initialOverrides={workflowStore.activeWorkflow.overrides ?? []}
         onOverridesChange={(overrides) => (editOverrides = overrides.map((row) => ({ ...row })))}
     />
 {/key}
 ```
 
-Assigning a fresh object changes the key without reading the previous key, so it
-cannot make the hydration effect depend on state that it updates.
+Crucially, `initialOverrides` comes directly from the currently active workflow,
+rather than from `editOverrides`. `editOverrides` is local draft state that is
+hydrated in a parent `$effect` and can briefly contain the previous workflow's
+values while a selection change is processed.
+
+When `activeWorkflow.id` changes, Svelte recreates the builder. The new instance
+receives the selected workflow's persisted overrides directly, so it initializes
+its local rows from the correct workflow without waiting for the form hydration
+effect.
 
 ## Result
 
 When selecting a workflow, Settings now:
 
-1. Reads the selected workflow from the store.
-2. Copies its overrides into `editOverrides`.
-3. Recreates the dynamic builder with those hydrated overrides.
+1. Selects the workflow in the store.
+2. Recreates the override builder because its workflow identity changed.
+3. Initializes the builder directly from that workflow's saved overrides.
+4. Hydrates the remaining editable form fields into local draft state.
 
 Each workflow now displays its own saved overrides immediately, without an
-extra selection and without a reactive update loop.
+extra selection, a reactive update loop, or an artificial reset key.
 
 ## Validation
 

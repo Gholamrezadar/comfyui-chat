@@ -19,7 +19,6 @@
 	let editBaseUrl = $state('');
 	let editWorkflowText = $state('');
 	let editOverrides = $state<WorkflowOverride[]>([]);
-	let builderKey = $state({});
 	let errors = $state<{ name?: string; base_url?: string; workflow?: string }>({});
 	let showDeleteConfirm = $state(false);
 
@@ -31,7 +30,6 @@
 			editBaseUrl = wf.base_url;
 			editWorkflowText = wf.workflow;
 			editOverrides = (wf.overrides ?? []).map((o) => ({ path: o.path, value: o.value }));
-			builderKey = {};
 			errors = {};
 		}
 	});
@@ -311,11 +309,11 @@
 								</div>
 
 								<!-- Workflow Overrides -->
-								{#key builderKey}
+								{#key workflowStore.activeWorkflow.id}
 									<DynamicWorkflowBuilder
 										bind:this={dynamicBuilder}
 										workflowText={editWorkflowText}
-										initialOverrides={editOverrides}
+										initialOverrides={workflowStore.activeWorkflow.overrides ?? []}
 										onOverridesChange={(o) => (editOverrides = o.map((r) => ({ ...r })))}
 									/>
 								{/key}
