@@ -5,7 +5,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { workflowStore } from '$lib/stores/workflow.store.svelte';
 	import { X, Plus, Trash2 } from 'lucide-svelte';
-	import type { Workflow, WorkflowOverride } from '$lib/services/workflow.service';
+	import type { WorkflowOverride } from '$lib/services/workflow.service';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import DynamicWorkflowBuilder from '$lib/components/DynamicWorkflowBuilder.svelte';
 	import { toast } from 'svelte-sonner';
@@ -19,6 +19,7 @@
 	let editBaseUrl = $state('');
 	let editWorkflowText = $state('');
 	let editOverrides = $state<WorkflowOverride[]>([]);
+	let builderKey = $state({});
 	let errors = $state<{ name?: string; base_url?: string; workflow?: string }>({});
 	let showDeleteConfirm = $state(false);
 
@@ -30,6 +31,7 @@
 			editBaseUrl = wf.base_url;
 			editWorkflowText = wf.workflow;
 			editOverrides = (wf.overrides ?? []).map((o) => ({ path: o.path, value: o.value }));
+			builderKey = {};
 			errors = {};
 		}
 	});
@@ -308,15 +310,15 @@
 									{/if}
 								</div>
 
-							<!-- Workflow Overrides -->
-						{#key workflowStore.activeId}
-							<DynamicWorkflowBuilder
-								bind:this={dynamicBuilder}
-								workflowText={editWorkflowText}
-								initialOverrides={editOverrides}
-								onOverridesChange={(o) => (editOverrides = o.map((r) => ({ ...r })))}
-							/>
-						{/key}
+								<!-- Workflow Overrides -->
+								{#key builderKey}
+									<DynamicWorkflowBuilder
+										bind:this={dynamicBuilder}
+										workflowText={editWorkflowText}
+										initialOverrides={editOverrides}
+										onOverridesChange={(o) => (editOverrides = o.map((r) => ({ ...r })))}
+									/>
+								{/key}
 								<div class="flex justify-end">
 									<Button onclick={handleSave} class="cursor-pointer px-6" tabindex={4}>Save</Button
 									>
