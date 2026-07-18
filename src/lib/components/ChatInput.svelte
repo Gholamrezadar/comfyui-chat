@@ -20,7 +20,6 @@
 	let showSettings = $state(false);
 	let highlightedWorkflowIndex = $state(-1);
 
-	// TODO: Pass selectedWorkflow to the API when workflow integration is implemented
 	let selectedWorkflow = $state<Workflow | null>(null);
 
 	// Restore selected workflow from persistence on mount
@@ -80,7 +79,7 @@
 		const hasImages = pendingImages.length > 0;
 		if ((!trimmed && !hasImages) || chatStore.isResponding) return;
 
-		chatStore.sendMessage(trimmed, hasImages ? [...pendingImages] : undefined);
+		chatStore.sendMessage(trimmed, hasImages ? [...pendingImages] : undefined, selectedWorkflow ?? undefined);
 		inputValue = '';
 		pendingImages = [];
 		if (textareaEl) textareaEl.style.height = 'auto';

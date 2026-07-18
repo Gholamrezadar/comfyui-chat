@@ -1,5 +1,8 @@
 import { type Conversation, type Message } from '$lib/services/chat.service';
 import * as chatService from '$lib/services/chat.service';
+import { comfyStore } from '$lib/stores/comfy-store.svelte';
+import { mergeWorkflow } from '$lib/services/workflow-merge';
+import type { Workflow } from '$lib/services/workflow.service';
 
 function createChatStore() {
 	let conversations = $state<Conversation[]>([]);
@@ -50,7 +53,7 @@ function createChatStore() {
 	}
 
 	// Send a user message in the active conversation
-	function sendMessage(content: string, images?: string[]) {
+	function sendMessage(content: string, images?: string[], workflow?: Workflow) {
 		const hasContent = content.trim().length > 0;
 		const hasImages = images && images.length > 0;
 		if ((!hasContent && !hasImages) || isResponding) return;
@@ -84,24 +87,88 @@ function createChatStore() {
 		// Assistant replies to the user message we just sent
 		const newUserMsg = afterUser.messages[afterUser.messages.length - 1];
 
-		// Fake assistant response via service callback
-		chatService.addAssistantMessage(
-			afterUser,
-			(afterAssistant) => {
-				conversations = conversations.map((c) =>
-					c.id === afterAssistant.id ? afterAssistant : c
-				);
-				isResponding = false;
-				chatService.saveConversation(afterAssistant);
-			},
-			newUserMsg.id,
-			newUserMsg.content
-		);
+		if (workflow && workflow.workflow && workflow.base_url) {
+			// Real ComfyUI generation
+			generateWithComfyUI(afterUser, newUserMsg.id, newUserMsg.content, workflow);
+		} else {
+			// Fake assistant response via service callback (no workflow selected)
+			chatService.addAssistantMessage(
+				afterUser,
+				(afterAssistant) => {
+					conversations = conversations.map((c) =>
+						c.id === afterAssistant.id ? afterAssistant : c
+					);
+					isResponding = false;
+					chatService.saveConversation(afterAssistant);
+				},
+				newUserMsg.id,
+				newUserMsg.content
+			);
+		}
+	}
+
+	async function generateWithComfyUI(
+		convo: Conversation,
+		replyToId: string,
+		userPrompt: string,
+		workflow: Workflow
+	) {
+		try {
+			const merged = mergeWorkflow(
+				workflow.workflow,
+				workflow.overrides ?? [],
+				userPrompt,
+				workflow.promptNodeId
+			);
+
+			const result = await comfyStore.generate(workflow.base_url, merged);
+
+			// Create assistant message with generated images
+			const assistantMsg: Message = {
+				id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+				role: 'assistant',
+				content: '',
+				timestamp: Date.now(),
+				replyToId,
+				replyToContent: userPrompt,
+				images: result.imageUrls.length > 0 ? result.imageUrls : undefined
+			};
+
+			const updated: Conversation = {
+				...convo,
+				messages: [...convo.messages, assistantMsg],
+				updatedAt: Date.now()
+			};
+
+			conversations = conversations.map((c) => (c.id === updated.id ? updated : c));
+			isResponding = false;
+			chatService.saveConversation(updated);
+		} catch (e) {
+			// Create error message
+			const errorMsg: Message = {
+				id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+				role: 'assistant',
+				content: `Generation failed: ${e instanceof Error ? e.message : 'Unknown error'}`,
+				timestamp: Date.now(),
+				replyToId,
+				replyToContent: userPrompt
+			};
+
+			const updated: Conversation = {
+				...convo,
+				messages: [...convo.messages, errorMsg],
+				updatedAt: Date.now()
+			};
+
+			conversations = conversations.map((c) => (c.id === updated.id ? updated : c));
+			isResponding = false;
+			chatService.saveConversation(updated);
+		}
 	}
 
 	// Edit a message's content
 	function editMessage(messageId: string, newContent: string) {
-		let convo = activeConversation;
+		const convo = activeConversation;
 		if (!convo) return;
 
 		const updated = chatService.editMessage($state.snapshot(convo), messageId, newContent);
@@ -112,7 +179,7 @@ function createChatStore() {
 
 	// Delete a message
 	function deleteMessage(messageId: string) {
-		let convo = activeConversation;
+		const convo = activeConversation;
 		if (!convo) return;
 
 		const updated = chatService.deleteMessage($state.snapshot(convo), messageId);

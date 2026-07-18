@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { chatStore } from '$lib/stores/chat.store.svelte';
+	import { comfyStore } from '$lib/stores/comfy-store.svelte';
 	import MessageList from './MessageList.svelte';
 	import ChatInput from './ChatInput.svelte';
+	import GeneratingMessage from './GeneratingMessage.svelte';
 	import { Bot } from 'lucide-svelte';
 
 	// Whether we have an active conversation with messages
@@ -43,6 +45,15 @@
 
 		<!-- Message List -->
 		<MessageList />
+
+		<!-- Generating Message (live preview + progress) -->
+		{#if comfyStore.isGenerating}
+			<div class="px-4 py-2">
+				<div class="mx-auto max-w-2xl">
+					<GeneratingMessage />
+				</div>
+			</div>
+		{/if}
 
 		<!-- Bottom Chat Input -->
 		<div class="bg-background px-4 py-3">

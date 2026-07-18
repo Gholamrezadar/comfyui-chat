@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ComfyUI Tester 3</title>
+  <style>
+    /* Design tokens and reset */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #09090b;
+      --surface: #111113;
+      --border: #27272a;
+      --border-hi: #3f3f46;
+      --muted: #71717a;
+      --text: #fafafa;
+      --text-sub: #a1a1aa;
+      --accent: #6366f1;
+      --accent-hi: #818cf8;
+      --accent-dim: rgba(99, 102, 241, .15);
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --radius: 8px;
+      --radius-lg: 12px;
+      --font-mono: 'Courier New', Courier, monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* Layout */
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+      display: grid;
+      gap: 24px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.3s;
+    }
+
+    .header-dot.connected {
+      background: var(--success);
+      box-shadow: 0 0 6px var(--success);
+    }
+
+    .header-dot.error {
+      background: var(--error);
+    }
+
+    .header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .header-status {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* Form fields */
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+      resize: vertical;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    textarea {
+      min-height: 90px;
+    }
+
+    /* Two-column config row */
+    .config-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 540px) {
+      .config-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Workflow field */
+    .workflow-area textarea {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      min-height: 160px;
+    }
+
+    /* Prompt node hint */
+    .field-hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 5px;
+    }
+
+    /* Button */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hi);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-sub);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover:not(:disabled) {
+      border-color: var(--border-hi);
+      color: var(--text);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* Progress / status panel */
+    .status-panel {
+      display: none;
+    }
+
+    .status-panel.visible {
+      display: block;
+    }
+
+    .timing-row {
+      display: flex;
+      gap: 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-bottom: 10px;
+    }
+
+    .timing-row span {
+      display: inline-flex;
+      gap: 6px;
+      align-items: baseline;
+    }
+
+    .timing-label {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .timing-value {
+      color: var(--text);
+      font-weight: 600;
+      min-width: 48px;
+    }
+
+    .timing-value.eta {
+      color: var(--accent-hi);
+    }
+
+    .progress-bar-wrap {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      height: 6px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 99px;
+      width: 0%;
+      transition: width 0.2s ease;
+    }
+
+    /* Log stream */
+    .log {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-sub);
+      max-height: 200px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .log-entry {
+      display: flex;
+      gap: 10px;
+    }
+
+    .log-time {
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .log-msg {
+      color: var(--text-sub);
+      word-break: break-all;
+    }
+
+    .log-msg.accent {
+      color: var(--accent-hi);
+    }
+
+    .log-msg.success {
+      color: var(--success);
+    }
+
+    .log-msg.warning {
+      color: var(--warning);
+    }
+
+    .log-msg.error {
+      color: var(--error);
+    }
+
+    /* Preview image */
+    .preview-panel {
+      display: none;
+    }
+
+    .preview-panel.visible {
+      display: block;
+    }
+
+    .preview-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 200px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .preview-container img {
+      display: block;
+      max-width: 100%;
+      max-height: 512px;
+      object-fit: contain;
+    }
+
+    .preview-placeholder {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* Output image */
+    .output-panel {
+      display: none;
+    }
+
+    .output-panel.visible {
+      display: block;
+    }
+
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+
+    .image-wrap {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--bg);
+      position: relative;
+    }
+
+    .image-wrap img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .image-label {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      padding: 6px 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Spinner icon */
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spin {
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-hi);
+      border-radius: 99px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-dot" id="wsDot"></div>
+      <h1>ComfyUI API Tester</h1>
+      <span class="header-status" id="wsStatus">disconnected</span>
+    </div>
+
+    <!-- Connection config -->
+    <div class="card">
+      <div class="card-title">Connection</div>
+      <div class="config-row">
+        <div>
+          <label for="serverUrl">Server URL</label>
+          <input type="text" id="serverUrl" value="http://127.0.0.1:8188" />
+        </div>
+        <div>
+          <label for="clientId">Client ID</label>
+          <input type="text" id="clientId" readonly />
+        </div>
+      </div>
+    </div>
+
+    <!-- Workflow + prompt -->
+    <div class="card">
+      <div class="card-title">Workflow</div>
+
+      <div style="margin-bottom:16px;">
+        <label for="promptNodeId">Prompt Node ID (the CLIPTextEncode or similar node that takes your text)</label>
+        <input type="text" id="promptNodeId" value="6" placeholder="e.g. 6" />
+        <div class="field-hint">The node ID in your workflow JSON whose "text" input will receive the prompt.</div>
+      </div>
+
+      <div class="workflow-area">
+        <label for="workflowJson">Workflow JSON</label>
+        <textarea id="workflowJson" spellcheck="false"
+          placeholder='Paste your exported workflow JSON here (use "Save (API format)" in ComfyUI)...'></textarea>
+      </div>
+    </div>
+
+    <!-- Prompt input -->
+    <div class="card">
+      <div class="card-title">Prompt</div>
+      <div style="margin-bottom:16px;">
+        <label for="userPrompt">Positive prompt</label>
+        <textarea id="userPrompt" rows="3"
+          placeholder="a photo of a cat sitting on a windowsill, golden hour, cinematic..."></textarea>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="generateBtn" onclick="generate()">
+          Generate
+        </button>
+        <button class="btn btn-ghost" id="interruptBtn" onclick="interrupt()" disabled>
+          Interrupt
+        </button>
+        <button class="btn btn-ghost" onclick="clearAll()">
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Timing (always visible) -->
+    <div class="card" id="timingCard">
+      <div class="card-title">Timing</div>
+      <div class="timing-row">
+        <span><span class="timing-label">Elapsed</span> <span class="timing-value" id="elapsed">0s</span></span>
+        <span><span class="timing-label">ETA</span> <span class="timing-value eta" id="eta">—</span></span>
+      </div>
+    </div>
+
+    <!-- Progress / live events -->
+    <div class="card status-panel" id="statusPanel">
+      <div class="card-title">Execution</div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+      <div class="log" id="logArea"></div>
+    </div>
+
+    <!-- Live preview -->
+    <div class="card preview-panel" id="previewPanel">
+      <div class="card-title">Live Preview</div>
+      <div class="preview-container" id="previewContainer">
+        <span class="preview-placeholder">Waiting for preview…</span>
+      </div>
+    </div>
+
+    <!-- Output images -->
+    <div class="card output-panel" id="outputPanel">
+      <div class="card-title">Output</div>
+      <div class="image-grid" id="imageGrid"></div>
+    </div>
+
+  </div>
+
+  <script src="comfyui-api.js"></script>
+  <script>
+    // ─── State ──────────────────────────────────────────────────────────────────
+
+    let currentPromptId = null;
+
+    // ─── Client setup ───────────────────────────────────────────────────────────
+
+    const client = new ComfyUIClient('http://127.0.0.1:8188');
+    document.getElementById('clientId').value = client.clientId;
+
+    // ─── Logging ────────────────────────────────────────────────────────────────
+
+    function log(msg, style = '') {
+      const area = document.getElementById('logArea');
+      const now = new Date().toLocaleTimeString('en', { hour12: false });
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<span class="log-time">${now}</span><span class="log-msg ${style}">${msg}</span>`;
+      area.appendChild(entry);
+      area.scrollTop = area.scrollHeight;
+    }
+
+    function showStatusPanel() {
+      document.getElementById('statusPanel').classList.add('visible');
+    }
+
+    function showPreviewPanel() {
+      document.getElementById('previewPanel').classList.add('visible');
+    }
+
+    function showOutputPanel() {
+      document.getElementById('outputPanel').classList.add('visible');
+    }
+
+    function setProgress(pct) {
+      document.getElementById('progressBar').style.width = `${pct}%`;
+    }
+
+    // ─── Timer ───────────────────────────────────────────────────────────────────
+
+    let timerInterval = null;
+    let timerStartMs = 0;
+
+    function startTimer() {
+      stopTimer();
+      timerStartMs = Date.now();
+      updateTimerDisplay();
+      timerInterval = setInterval(updateTimerDisplay, 100);
+    }
+
+    function stopTimer() {
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    }
+
+    function updateTimerDisplay() {
+      const elapsed = Date.now() - timerStartMs;
+      document.getElementById('elapsed').textContent = ComfyUIClient.fmtDuration(elapsed);
+    }
+
+    function updateEta(pct) {
+      const etaEl = document.getElementById('eta');
+      if (pct <= 0) { etaEl.textContent = '—'; return; }
+      const elapsed = Date.now() - timerStartMs;
+      const total = elapsed / (pct / 100);
+      const remaining = Math.max(0, total - elapsed);
+      etaEl.textContent = remaining < 1000 ? 'done' : ComfyUIClient.fmtDuration(remaining);
+    }
+
+    // ─── Library event handlers ─────────────────────────────────────────────────
+
+    client.on('connected', () => {
+      document.getElementById('wsDot').className = 'header-dot connected';
+      document.getElementById('wsStatus').textContent = 'connected';
+    });
+
+    client.on('disconnected', () => {
+      document.getElementById('wsDot').className = 'header-dot';
+      document.getElementById('wsStatus').textContent = 'disconnected';
+    });
+
+    client.on('error', (msg) => {
+      document.getElementById('wsDot').className = 'header-dot error';
+      document.getElementById('wsStatus').textContent = 'connection error';
+      log(msg, 'error');
+    });
+
+    client.on('status', (queueRemaining) => {
+      log(`queue remaining: ${queueRemaining}`);
+    });
+
+    client.on('start', (promptId) => {
+      log(`execution started — prompt: ${promptId}`, 'accent');
+      setProgress(0);
+    });
+
+    client.on('cached', (nodeCount) => {
+      log(`using cached results for ${nodeCount} nodes`, 'warning');
+    });
+
+    client.on('executing', (nodeId) => {
+      log(`executing node: ${nodeId}`);
+    });
+
+    client.on('progress', (value, max, pct) => {
+      setProgress(pct);
+      updateEta(pct);
+      log(`progress: ${value}/${max} (${pct}%)`);
+    });
+
+    client.on('executed', (nodeId, images) => {
+      if (images.length) {
+        log(`node ${nodeId} produced ${images.length} image(s)`, 'success');
+      }
+    });
+
+    client.on('done', (promptId) => {
+      log('all nodes executed', 'success');
+      setProgress(100);
+      updateEta(100);
+      stopTimer();
+      onExecutionDone(promptId);
+    });
+
+    client.on('error:exec', (message) => {
+      log(`error: ${message}`, 'error');
+      stopTimer();
+      resetButtons();
+    });
+
+    client.on('preview', (url) => {
+      showPreview(url);
+    });
+
+    // ─── Preview display ────────────────────────────────────────────────────────
+
+    let previewFrameCount = 0;
+
+    function showPreview(url) {
+      const panel = document.getElementById('previewPanel');
+      const container = document.getElementById('previewContainer');
+      panel.classList.add('visible');
+
+      previewFrameCount++;
+      log(`preview frame #${previewFrameCount} received`, 'accent');
+
+      let img = container.querySelector('img');
+      if (!img) {
+        container.innerHTML = '';
+        img = document.createElement('img');
+        img.alt = 'Live preview';
+        container.appendChild(img);
+      }
+      img.src = url;
+    }
+
+    // ─── API calls (using library) ──────────────────────────────────────────────
+
+    async function generate() {
+      const workflowRaw = document.getElementById('workflowJson').value.trim();
+      const userPrompt = document.getElementById('userPrompt').value.trim();
+      const nodeId = document.getElementById('promptNodeId').value.trim();
+
+      if (!workflowRaw) { alert('Paste your workflow JSON first.'); return; }
+      if (!userPrompt) { alert('Enter a prompt.'); return; }
+
+      let workflow;
+      try {
+        workflow = JSON.parse(workflowRaw);
+      } catch (e) {
+        alert(`Invalid workflow JSON: ${e.message}`);
+        return;
+      }
+
+      if (!workflow[nodeId]) {
+        alert(`Node ID "${nodeId}" not found in workflow. Check the Prompt Node ID field.`);
+        return;
+      }
+      workflow[nodeId].inputs.text = userPrompt;
+
+      // Connect if needed
+      if (!client.isConnected) {
+        try {
+          document.getElementById('wsDot').className = 'header-dot';
+          document.getElementById('wsStatus').textContent = 'connecting…';
+          await client.connect();
+        } catch {
+          // error handler already logged it
+          return;
+        }
+      }
+
+      // Reset UI
+      document.getElementById('logArea').innerHTML = '';
+      document.getElementById('imageGrid').innerHTML = '';
+      document.getElementById('previewContainer').innerHTML = '<span class="preview-placeholder">Waiting for preview…</span>';
+      document.getElementById('previewPanel').classList.remove('visible');
+      client.revokePreview();
+      previewFrameCount = 0;
+      setProgress(0);
+      document.getElementById('elapsed').textContent = '0s';
+      document.getElementById('eta').textContent = '—';
+      showStatusPanel();
+      showPreviewPanel();
+      setButtons(true);
+      startTimer();
+
+      log('submitting workflow…', 'accent');
+
+      try {
+        const { promptId, number } = await client.submitPrompt(workflow);
+        currentPromptId = promptId;
+        log(`queued — prompt_id: ${promptId}`, 'success');
+        log(`queue position: ${number}`);
+      } catch (e) {
+        log(`error: ${e.message}`, 'error');
+        if (e.nodeErrors) {
+          for (const [nid, err] of Object.entries(e.nodeErrors)) {
+            log(`  node ${nid}: ${JSON.stringify(err)}`, 'error');
+          }
+        }
+        stopTimer();
+        resetButtons();
+      }
+    }
+
+    async function onExecutionDone(promptId) {
+      if (!promptId) return;
+
+      let history;
+      try {
+        history = await client.fetchHistory(promptId);
+      } catch (e) {
+        log(`failed to fetch history: ${e.message}`, 'error');
+        resetButtons();
+        return;
+      }
+
+      const allImages = client.collectOutputImages(history);
+
+      if (allImages.length === 0) {
+        log('execution done, no image outputs found', 'warning');
+      } else {
+        log(`fetching ${allImages.length} image(s)…`, 'accent');
+        showOutputPanel();
+        allImages.forEach(img => displayImage(img));
+      }
+
+      resetButtons();
+    }
+
+    function displayImage(img) {
+      const url = client.getImageUrl(img.filename, img.subfolder, img.type);
+
+      const grid = document.getElementById('imageGrid');
+      const wrap = document.createElement('div');
+      wrap.className = 'image-wrap';
+
+      const el = document.createElement('img');
+      el.src = url;
+      el.alt = img.filename;
+      el.loading = 'lazy';
+
+      const label = document.createElement('div');
+      label.className = 'image-label';
+      label.textContent = `${img.filename} · node ${img.nodeId}`;
+
+      wrap.appendChild(el);
+      wrap.appendChild(label);
+      grid.appendChild(wrap);
+    }
+
+    async function interrupt() {
+      try {
+        await client.interrupt();
+        log('interrupt sent', 'warning');
+      } catch (e) {
+        log(`interrupt failed: ${e.message}`, 'error');
+      }
+      stopTimer();
+      resetButtons();
+    }
+
+    // ─── Button state helpers ────────────────────────────────────────────────────
+
+    function setButtons(generating) {
+      document.getElementById('generateBtn').disabled = generating;
+      document.getElementById('interruptBtn').disabled = !generating;
+      if (generating) {
+        document.getElementById('generateBtn').innerHTML = '<span class="spin">⟳</span> Generating…';
+      } else {
+        document.getElementById('generateBtn').innerHTML = 'Generate';
+      }
+    }
+
+    function resetButtons() {
+      setButtons(false);
+      currentPromptId = null;
+    }
+
+    function clearAll() {
+      stopTimer();
+      document.getElementById('logArea').innerHTML = '';
+      document.getElementById('imageGrid').innerHTML = '';
+      document.getElementById('previewContainer').innerHTML = '<span class="preview-placeholder">Waiting for preview…</span>';
+      document.getElementById('statusPanel').classList.remove('visible');
+      document.getElementById('previewPanel').classList.remove('visible');
+      document.getElementById('outputPanel').classList.remove('visible');
+      setProgress(0);
+      resetButtons();
+      client.revokePreview();
+      previewFrameCount = 0;
+    }
+
+    // ─── Init ────────────────────────────────────────────────────────────────────
+
+    client.connect().catch(() => {});
+
+    document.getElementById('serverUrl').addEventListener('change', () => {
+      const url = document.getElementById('serverUrl').value.trim();
+      if (url) {
+        client.setServerUrl(url);
+        client.connect().catch(() => {});
+      }
+    });
+  </script>
+</body>
+
+</html>

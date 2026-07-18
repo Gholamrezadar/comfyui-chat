@@ -11,6 +11,7 @@ export interface Workflow {
 	base_url: string;
 	workflow: string;
 	overrides: WorkflowOverride[];
+	promptNodeId?: string;
 	createdAt: number;
 	updatedAt: number;
 }

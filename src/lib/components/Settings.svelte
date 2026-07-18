@@ -19,6 +19,7 @@
 	let editBaseUrl = $state('');
 	let editWorkflowText = $state('');
 	let editOverrides = $state<WorkflowOverride[]>([]);
+	let editPromptNodeId = $state('');
 	let errors = $state<{ name?: string; base_url?: string; workflow?: string }>({});
 	let showDeleteConfirm = $state(false);
 
@@ -30,6 +31,7 @@
 			editBaseUrl = wf.base_url;
 			editWorkflowText = wf.workflow;
 			editOverrides = (wf.overrides ?? []).map((o) => ({ path: o.path, value: o.value }));
+			editPromptNodeId = wf.promptNodeId ?? '';
 			errors = {};
 		}
 	});
@@ -79,6 +81,7 @@
 		editBaseUrl = '';
 		editWorkflowText = '';
 		editOverrides = [];
+		editPromptNodeId = '';
 		errors = {};
 	}
 
@@ -94,6 +97,7 @@
 				base_url: editBaseUrl.trim(),
 				workflow: editWorkflowText,
 				overrides: overridesToSave,
+				promptNodeId: editPromptNodeId.trim() || undefined,
 				createdAt: wf.createdAt,
 				updatedAt: wf.updatedAt
 			});
@@ -308,6 +312,23 @@
 									{/if}
 								</div>
 
+								<!-- Prompt Node ID -->
+								<div class="flex flex-col gap-1.5">
+									<label for="wf-prompt-node" class="text-sm font-medium text-foreground"
+										>Prompt Node ID</label
+									>
+									<Input
+										id="wf-prompt-node"
+										bind:value={editPromptNodeId}
+										placeholder="e.g. 6"
+										tabindex={4}
+									/>
+									<p class="text-[11px] text-muted-foreground">
+										Node ID that receives your chat message text (e.g. a CLIPTextEncode node).
+										Leave empty to only use overrides.
+									</p>
+								</div>
+
 								<!-- Workflow Overrides -->
 								{#key workflowStore.activeWorkflow.id}
 									<DynamicWorkflowBuilder
@@ -349,6 +370,7 @@
 			editBaseUrl = next.base_url;
 			editWorkflowText = next.workflow;
 			editOverrides = (next.overrides ?? []).map((o) => ({ path: o.path, value: o.value }));
+			editPromptNodeId = next.promptNodeId ?? '';
 		}
 	}}
 />
