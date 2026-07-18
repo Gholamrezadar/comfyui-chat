@@ -168,6 +168,9 @@ export class ComfyUIClient {
 			case 'execution_error':
 				this._emit('error:exec', data.exception_message);
 				break;
+			case 'execution_interrupted':
+				this._emit('error:exec', 'Interrupted');
+				break;
 		}
 	}
 

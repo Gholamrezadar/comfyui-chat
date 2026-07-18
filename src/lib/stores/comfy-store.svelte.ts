@@ -12,6 +12,7 @@ function createComfyStore() {
 
 	let connectionStatus = $state<ConnectionStatus>('disconnected');
 	let isGenerating = $state(false);
+	let cancelled = $state(false);
 	let progressValue = $state(0);
 	let progressMax = $state(0);
 	let progressPct = $state(0);
@@ -78,6 +79,7 @@ function createComfyStore() {
 
 	function _resetState(): void {
 		isGenerating = false;
+		cancelled = false;
 		progressValue = 0;
 		progressMax = 0;
 		progressPct = 0;
@@ -240,7 +242,9 @@ function createComfyStore() {
 			await client.interrupt();
 		}
 		_stopTimer();
-		isGenerating = false;
+		cancelled = true;
+		// Don't set isGenerating=false here — let _onErrorExec handle it
+		// so the GeneratingMessage stays visible until the real message is created
 	}
 
 	return {
@@ -249,6 +253,9 @@ function createComfyStore() {
 		},
 		get isGenerating(): boolean {
 			return isGenerating;
+		},
+		get cancelled(): boolean {
+			return cancelled;
 		},
 		get progressValue(): number {
 			return progressValue;

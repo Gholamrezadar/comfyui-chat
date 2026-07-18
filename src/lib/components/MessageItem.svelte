@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { chatStore } from '$lib/stores/chat.store.svelte';
 	import type { Message } from '$lib/services/chat.service';
-	import { Reply, Pencil, Trash2, X, Check } from 'lucide-svelte';
+	import { Reply, Pencil, Trash2, X, Check, Ban } from 'lucide-svelte';
 	import { tick } from 'svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
@@ -41,6 +41,16 @@
 			hour: '2-digit',
 			minute: '2-digit'
 		});
+	}
+
+	function formatGenerationTime(ms: number): string {
+		const totalSeconds = Math.floor(ms / 1000);
+		const minutes = Math.floor(totalSeconds / 60);
+		const seconds = totalSeconds % 60;
+		if (minutes > 0) {
+			return `${minutes}m ${seconds}s`;
+		}
+		return `${seconds}s`;
 	}
 
 	function getImageGridClass(count: number): string {
@@ -177,43 +187,55 @@
 							}`
 				}`}
 			>
-				<!-- Message Images -->
-				{#if visibleImages.length}
-					<div class={`${getImageGridClass(visibleImages.length)} ${isUser ? '' : 'max-w-sm'}`}>
-						{#each visibleImages as img, i}
-							<button
-								onclick={() => openLightbox(img)}
-								class="relative block cursor-pointer overflow-hidden {visibleImages.length === 1
-									? 'rounded-lg'
-									: 'first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg'}"
-								tabindex={-1}
-							>
-								<img
-									src={img}
-									alt={isUser ? `Uploaded image ${i + 1}` : `Image ${i + 1}`}
-									class="block w-full object-cover {visibleImages.length === 1
-										? 'max-h-64 rounded-lg'
-										: 'h-24'}"
-								/>
-							</button>
-						{/each}
+				{#if message.cancelled}
+					<!-- Cancelled card -->
+					<div
+						class="flex h-40 w-64 items-center justify-center rounded-xl border border-border bg-muted/30"
+					>
+						<div class="flex flex-col items-center gap-2">
+							<Ban class="h-6 w-6 text-muted-foreground" />
+							<span class="text-xs text-muted-foreground">Generation Cancelled!</span>
+						</div>
 					</div>
-					{#if hiddenImageCount > 0}
-						<p class="{isUser ? 'px-3 pt-1 ' : ''}text-[11px] text-muted-foreground">
-							+{hiddenImageCount} more image{hiddenImageCount > 1 ? 's' : ''}
+				{:else}
+					<!-- Message Images -->
+					{#if visibleImages.length}
+						<div class={`${getImageGridClass(visibleImages.length)} ${isUser ? '' : 'max-w-sm'}`}>
+							{#each visibleImages as img, i (img)}
+								<button
+									onclick={() => openLightbox(img)}
+									class="relative block cursor-pointer overflow-hidden {visibleImages.length === 1
+										? 'rounded-lg'
+										: 'first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg'}"
+									tabindex={-1}
+								>
+									<img
+										src={img}
+										alt={isUser ? `Uploaded image ${i + 1}` : `Image ${i + 1}`}
+										class="block w-full object-cover {visibleImages.length === 1
+											? 'max-h-64 rounded-lg'
+											: 'h-24'}"
+									/>
+								</button>
+							{/each}
+						</div>
+						{#if hiddenImageCount > 0}
+							<p class="{isUser ? 'px-3 pt-1 ' : ''}text-[11px] text-muted-foreground">
+								+{hiddenImageCount} more image{hiddenImageCount > 1 ? 's' : ''}
+							</p>
+						{/if}
+					{/if}
+
+					<!-- Message Text -->
+					{#if message.content}
+						<p
+							class={`text-sm leading-relaxed whitespace-pre-wrap ${
+								isUser ? (message.images?.length ? 'px-3 py-1.5' : '') : 'text-foreground'
+							}`}
+						>
+							{message.content}
 						</p>
 					{/if}
-				{/if}
-
-				<!-- Message Text -->
-				{#if message.content}
-					<p
-						class={`text-sm leading-relaxed whitespace-pre-wrap ${
-							isUser ? (message.images?.length ? 'px-3 py-1.5' : '') : 'text-foreground'
-						}`}
-					>
-						{message.content}
-					</p>
 				{/if}
 			</div>
 		{/if}
@@ -226,6 +248,13 @@
 					{formatTimestamp(message.timestamp)}
 				</span>
 
+				
+				<!-- Generation Time (assistant messages with images only) -->
+				{#if !isUser && message.generationTime}
+					<span class="text-[10px] text-muted-foreground">
+						| Took {formatGenerationTime(message.generationTime)}
+					</span>
+				{/if}
 				<!-- Reply Button -->
 				<button
 					onclick={() => chatStore.setReplyTo(message)}
@@ -235,10 +264,10 @@
 				>
 					<Reply class="h-3.5 w-3.5" />
 				</button>
-
+				
 				<!-- Edit Button -->
 				{#if isUser}
-					<button
+				<button
 						onclick={startEdit}
 						class="cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground"
 						aria-label="Edit"
@@ -246,10 +275,10 @@
 					>
 						<Pencil class="h-3.5 w-3.5" />
 					</button>
-				{/if}
-
-				<!-- Delete Button -->
-				<button
+					{/if}
+					
+					<!-- Delete Button -->
+					<button
 					onclick={() => (showDeleteConfirm = true)}
 					class="cursor-pointer rounded p-1 text-muted-foreground hover:text-destructive"
 					aria-label="Delete"
@@ -257,6 +286,7 @@
 				>
 					<Trash2 class="h-3.5 w-3.5" />
 				</button>
+
 			</div>
 		{/if}
 	</div>

@@ -56,7 +56,7 @@ function createChatStore() {
 	function sendMessage(content: string, images?: string[], workflow?: Workflow) {
 		const hasContent = content.trim().length > 0;
 		const hasImages = images && images.length > 0;
-		if ((!hasContent && !hasImages) || isResponding) return;
+		if ((!hasContent && !hasImages) || isResponding || comfyStore.isGenerating) return;
 
 		// Auto-create a conversation if none is active
 		let convo = activeConversation;
@@ -81,17 +81,17 @@ function createChatStore() {
 			images
 		);
 		conversations = conversations.map((c) => (c.id === afterUser.id ? afterUser : c));
-		isResponding = true;
 		chatService.saveConversation(afterUser);
 
 		// Assistant replies to the user message we just sent
 		const newUserMsg = afterUser.messages[afterUser.messages.length - 1];
 
 		if (workflow && workflow.workflow && workflow.base_url) {
-			// Real ComfyUI generation
+			// Real ComfyUI generation — comfyStore.isGenerating handles the loading state
 			generateWithComfyUI(afterUser, newUserMsg.id, newUserMsg.content, workflow);
 		} else {
 			// Fake assistant response via service callback (no workflow selected)
+			isResponding = true;
 			chatService.addAssistantMessage(
 				afterUser,
 				(afterAssistant) => {
@@ -117,11 +117,13 @@ function createChatStore() {
 			const merged = mergeWorkflow(
 				workflow.workflow,
 				workflow.overrides ?? [],
-				userPrompt,
-				workflow.promptNodeId
+				userPrompt
 			);
 
 			const result = await comfyStore.generate(workflow.base_url, merged);
+
+			// Capture elapsed time before it resets
+			const generationTime = comfyStore.elapsed;
 
 			// Create assistant message with generated images
 			const assistantMsg: Message = {
@@ -131,7 +133,8 @@ function createChatStore() {
 				timestamp: Date.now(),
 				replyToId,
 				replyToContent: userPrompt,
-				images: result.imageUrls.length > 0 ? result.imageUrls : undefined
+				images: result.imageUrls.length > 0 ? result.imageUrls : undefined,
+				generationTime: generationTime > 0 ? generationTime : undefined
 			};
 
 			const updated: Conversation = {
@@ -144,14 +147,17 @@ function createChatStore() {
 			isResponding = false;
 			chatService.saveConversation(updated);
 		} catch (e) {
-			// Create error message
+			const wasCancelled = comfyStore.cancelled;
+
+			// Create assistant message
 			const errorMsg: Message = {
 				id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
 				role: 'assistant',
-				content: `Generation failed: ${e instanceof Error ? e.message : 'Unknown error'}`,
+				content: wasCancelled ? 'Generation Cancelled!' : `Generation failed: ${e instanceof Error ? e.message : 'Unknown error'}`,
 				timestamp: Date.now(),
 				replyToId,
-				replyToContent: userPrompt
+				replyToContent: userPrompt,
+				cancelled: wasCancelled || undefined
 			};
 
 			const updated: Conversation = {

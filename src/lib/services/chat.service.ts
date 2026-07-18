@@ -11,6 +11,8 @@ export interface Message {
 	replyToId?: string;
 	replyToContent?: string;
 	images?: string[];
+	generationTime?: number;
+	cancelled?: boolean;
 }
 
 export interface Conversation {

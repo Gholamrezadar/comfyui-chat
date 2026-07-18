@@ -19,7 +19,6 @@
 	let editBaseUrl = $state('');
 	let editWorkflowText = $state('');
 	let editOverrides = $state<WorkflowOverride[]>([]);
-	let editPromptNodeId = $state('');
 	let errors = $state<{ name?: string; base_url?: string; workflow?: string }>({});
 	let showDeleteConfirm = $state(false);
 
@@ -31,7 +30,6 @@
 			editBaseUrl = wf.base_url;
 			editWorkflowText = wf.workflow;
 			editOverrides = (wf.overrides ?? []).map((o) => ({ path: o.path, value: o.value }));
-			editPromptNodeId = wf.promptNodeId ?? '';
 			errors = {};
 		}
 	});
@@ -81,7 +79,6 @@
 		editBaseUrl = '';
 		editWorkflowText = '';
 		editOverrides = [];
-		editPromptNodeId = '';
 		errors = {};
 	}
 
@@ -97,7 +94,6 @@
 				base_url: editBaseUrl.trim(),
 				workflow: editWorkflowText,
 				overrides: overridesToSave,
-				promptNodeId: editPromptNodeId.trim() || undefined,
 				createdAt: wf.createdAt,
 				updatedAt: wf.updatedAt
 			});
@@ -233,6 +229,17 @@
 			<div class="flex flex-1 flex-col md:rounded-r-2xl">
 				<!-- Action Bar: always visible -->
 				<div class="flex items-center justify-end gap-2 border-b border-border px-4 py-3">
+					{#if workflowStore.activeWorkflow}
+						<Button
+							variant="default"
+							size="sm"
+							class="cursor-pointer px-4 text-xs"
+							onclick={handleSave}
+							tabindex={-1}
+						>
+							Save
+						</Button>
+					{/if}
 					{#if workflowStore.activeWorkflow && !isNewWorkflow}
 						<Button
 							variant="ghost"
@@ -312,23 +319,6 @@
 									{/if}
 								</div>
 
-								<!-- Prompt Node ID -->
-								<div class="flex flex-col gap-1.5">
-									<label for="wf-prompt-node" class="text-sm font-medium text-foreground"
-										>Prompt Node ID</label
-									>
-									<Input
-										id="wf-prompt-node"
-										bind:value={editPromptNodeId}
-										placeholder="e.g. 6"
-										tabindex={4}
-									/>
-									<p class="text-[11px] text-muted-foreground">
-										Node ID that receives your chat message text (e.g. a CLIPTextEncode node).
-										Leave empty to only use overrides.
-									</p>
-								</div>
-
 								<!-- Workflow Overrides -->
 								{#key workflowStore.activeWorkflow.id}
 									<DynamicWorkflowBuilder
@@ -338,10 +328,6 @@
 										onOverridesChange={(o) => (editOverrides = o.map((r) => ({ ...r })))}
 									/>
 								{/key}
-								<div class="flex justify-end">
-									<Button onclick={handleSave} class="cursor-pointer px-6" tabindex={4}>Save</Button
-									>
-								</div>
 							</div>
 						</ScrollArea>
 					</div>
@@ -370,7 +356,6 @@
 			editBaseUrl = next.base_url;
 			editWorkflowText = next.workflow;
 			editOverrides = (next.overrides ?? []).map((o) => ({ path: o.path, value: o.value }));
-			editPromptNodeId = next.promptNodeId ?? '';
 		}
 	}}
 />

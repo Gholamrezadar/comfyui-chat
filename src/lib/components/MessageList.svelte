@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { chatStore } from '$lib/stores/chat.store.svelte';
+	import { comfyStore } from '$lib/stores/comfy-store.svelte';
 	import MessageItem from '$lib/components/MessageItem.svelte';
+	import GeneratingMessage from '$lib/components/GeneratingMessage.svelte';
 	import { Bot } from 'lucide-svelte';
 	import { tick } from 'svelte';
 
@@ -15,6 +17,7 @@
 
 	$effect(() => {
 		const _ = chatStore.activeConversation?.messages.length;
+		const _gen = comfyStore.isGenerating;
 		tick().then(() => {
 			if (scrollEl) {
 				scrollEl.scrollTop = scrollEl.scrollHeight;
@@ -88,8 +91,10 @@
 			/>
 		{/each}
 
-		<!-- Typing Indicator -->
-		{#if chatStore.isResponding}
+		<!-- Generating Message (live preview) or Typing Indicator -->
+		{#if comfyStore.isGenerating}
+			<GeneratingMessage />
+		{:else if chatStore.isResponding}
 			<div class="flex items-start gap-3">
 				<!-- Assistant Avatar -->
 				<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary">

@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { chatStore } from '$lib/stores/chat.store.svelte';
 	import { workflowStore } from '$lib/stores/workflow.store.svelte';
+	import { comfyStore } from '$lib/stores/comfy-store.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
-	import { ImagePlus, LoaderCircle, ArrowUp, Box, Reply, X, ChevronUp, SlidersHorizontal } from 'lucide-svelte';
+	import { ImagePlus, LoaderCircle, ArrowUp, Box, Reply, X, ChevronUp, SlidersHorizontal, Square } from 'lucide-svelte';
 	import SettingsModal from '$lib/components/Settings.svelte';
 	import * as settingsService from '$lib/services/settings.service';
 	import { tick } from 'svelte';
@@ -77,7 +78,7 @@
 	function handleSend() {
 		const trimmed = inputValue.trim();
 		const hasImages = pendingImages.length > 0;
-		if ((!trimmed && !hasImages) || chatStore.isResponding) return;
+		if ((!trimmed && !hasImages) || chatStore.isResponding || comfyStore.isGenerating) return;
 
 		chatStore.sendMessage(trimmed, hasImages ? [...pendingImages] : undefined, selectedWorkflow ?? undefined);
 		inputValue = '';
@@ -157,7 +158,7 @@
 	}
 
 	const canSend = $derived(
-		(inputValue.trim() || pendingImages.length > 0) && !chatStore.isResponding
+		(inputValue.trim() || pendingImages.length > 0) && !chatStore.isResponding && !comfyStore.isGenerating
 	);
 
 	// Keyboard navigation for workflow dropdown
@@ -369,20 +370,31 @@
 			{/if}
 			</div>
 
-			<!-- Send Button -->
-			<Button
-				size="icon"
-				onclick={handleSend}
-				disabled={!canSend}
-				class="h-8 w-8 rounded-full cursor-pointer"
-				tabindex={11}
-			>
-				{#if chatStore.isResponding}
-					<LoaderCircle class="h-4 w-4 animate-spin cursor-wait" />
-				{:else}
-					<ArrowUp class="h-4 w-4" />
-				{/if}
-			</Button>
+			<!-- Send / Stop Button -->
+			{#if comfyStore.isGenerating}
+				<Button
+					size="icon"
+					onclick={() => comfyStore.cancel()}
+					class="h-8 w-8 rounded-full cursor-pointer bg-destructive text-destructive-foreground hover:bg-destructive/80"
+					tabindex={11}
+				>
+					<Square class="h-4 w-4" />
+				</Button>
+			{:else}
+				<Button
+					size="icon"
+					onclick={handleSend}
+					disabled={!canSend}
+					class="h-8 w-8 rounded-full cursor-pointer"
+					tabindex={11}
+				>
+					{#if chatStore.isResponding}
+						<LoaderCircle class="h-4 w-4 animate-spin cursor-wait" />
+					{:else}
+						<ArrowUp class="h-4 w-4" />
+					{/if}
+				</Button>
+			{/if}
 		</div>
 	</div>
 </div>

@@ -15,35 +15,25 @@ function setDeep(obj: Record<string, unknown>, path: string, value: unknown): vo
 }
 
 /**
- * Merge a workflow JSON string with overrides and an optional user prompt.
+ * Merge a workflow JSON string with overrides and the user's prompt text.
  *
  * 1. Parses the workflow JSON
  * 2. Applies each override at its dot-notation path
- * 3. If promptNodeId is provided, injects the user prompt into that node's "text" input
+ * 3. Any override with value "PROMPT" is replaced with the actual user prompt text
  *
  * Returns the merged workflow object ready for ComfyUIClient.submitPrompt().
  */
 export function mergeWorkflow(
 	workflowJson: string,
 	overrides: WorkflowOverride[],
-	promptText: string,
-	promptNodeId?: string
+	promptText: string
 ): Record<string, unknown> {
 	const parsed: Record<string, unknown> = JSON.parse(workflowJson);
 
 	for (const o of overrides) {
 		if (!o.path) continue;
-		setDeep(parsed, o.path, o.value);
-	}
-
-	if (promptNodeId && promptText) {
-		const node = parsed[promptNodeId] as Record<string, unknown> | undefined;
-		if (node) {
-			const inputs = node.inputs as Record<string, unknown> | undefined;
-			if (inputs) {
-				inputs.text = promptText;
-			}
-		}
+		const value = o.value === 'PROMPT' ? promptText : o.value;
+		setDeep(parsed, o.path, value);
 	}
 
 	return parsed;

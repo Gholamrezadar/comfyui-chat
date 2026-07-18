@@ -23,7 +23,7 @@
 	let idSeq = $state(initialOverrides.length);
 	let openPresetRowId = $state<number | null>(null);
 
-	const PRESET_VALUES = ['IMAGE1', 'IMAGE2', 'IMAGE3', 'IMAGE4'];
+	const PRESET_VALUES = ['PROMPT', 'IMAGE1', 'IMAGE2', 'IMAGE3', 'IMAGE4'];
 
 	export function addRowAtOffset(offset: number) {
 		const path = pathAtOffset(workflowText, offset);
@@ -174,7 +174,7 @@
 <div class="flex flex-col gap-1.5">
 	<label class="text-sm font-medium text-foreground">
 		Overrides
-		<span class="text-xs font-normal text-muted-foreground">(double-click a field to override)</span
+		<span class="text-xs font-normal text-muted-foreground">(double-click a field to override, use PROMPT for chat text)</span
 		>
 	</label>
 	{#if rows.length > 0}

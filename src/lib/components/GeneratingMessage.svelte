@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { comfyStore } from '$lib/stores/comfy-store.svelte';
-	import { LoaderCircle, X } from 'lucide-svelte';
+	import { LoaderCircle, X, Bot } from 'lucide-svelte';
 
 	function formatTime(ms: number): string {
 		const totalSeconds = Math.floor(ms / 1000);
@@ -10,22 +10,40 @@
 	}
 </script>
 
-<!-- Generating Message Row -->
+<!-- Generating Message Row (matches MessageItem assistant layout) -->
 <div class="flex items-start gap-3">
+	<!-- Assistant Avatar -->
+	<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary">
+		<Bot class="h-4 w-4 text-primary-foreground" />
+	</div>
+
 	<!-- Message Stack -->
 	<div class="flex min-w-0 flex-col gap-1">
-		<!-- Preview Image -->
-		{#if comfyStore.previewUrl}
-			<div class="overflow-hidden rounded-xl border border-border">
-				<img
-					src={comfyStore.previewUrl}
-					alt="Generating preview"
-					class="block max-h-64 w-full object-contain"
-				/>
-			</div>
-		{/if}
+		<!-- Message Bubble wrapper (matches MessageItem assistant style) -->
+		<div class="w-fit max-w-full px-2 py-2">
+			{#if comfyStore.previewUrl}
+				<!-- Preview Image -->
+				<div class="overflow-hidden rounded-xl border border-border">
+					<img
+						src={comfyStore.previewUrl}
+						alt="Generating preview"
+						class="block max-h-64 w-full object-contain"
+					/>
+				</div>
+			{:else}
+				<!-- Empty loading card before first preview -->
+				<div
+					class="flex h-40 w-64 items-center justify-center rounded-xl border border-border bg-muted/30"
+				>
+					<div class="flex flex-col items-center gap-2">
+						<LoaderCircle class="h-6 w-6 animate-spin text-muted-foreground" />
+						<span class="text-xs text-muted-foreground">Generating...</span>
+					</div>
+				</div>
+			{/if}
+		</div>
 
-		<!-- Progress + Timing -->
+		<!-- Progress + Timing (only while actively generating) -->
 		<div class="flex flex-col gap-1.5 px-1">
 			{#if comfyStore.progressMax > 0}
 				<!-- Progress Bar -->
