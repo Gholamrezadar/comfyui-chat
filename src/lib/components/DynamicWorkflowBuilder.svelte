@@ -174,7 +174,7 @@
 <div class="flex flex-col gap-1.5">
 	<label class="text-sm font-medium text-foreground">
 		Overrides
-		<span class="text-xs font-normal text-muted-foreground">(double-click a field to override, use PROMPT for chat text)</span
+		<span class="text-xs font-normal text-muted-foreground">(double-click a field to override, use PROMPT for chat text, IMAGE1-4 for uploaded images)</span
 		>
 	</label>
 	{#if rows.length > 0}

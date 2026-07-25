@@ -1,8 +1,9 @@
 import { type Conversation, type Message } from '$lib/services/chat.service';
 import * as chatService from '$lib/services/chat.service';
 import { comfyStore } from '$lib/stores/comfy-store.svelte';
-import { mergeWorkflow } from '$lib/services/workflow-merge';
+import { mergeWorkflow, uploadImages, validateImageOverrides } from '$lib/services/workflow-merge';
 import type { Workflow } from '$lib/services/workflow.service';
+import { toast } from 'svelte-sonner';
 
 function createChatStore() {
 	let conversations = $state<Conversation[]>([]);
@@ -70,6 +71,7 @@ function createChatStore() {
 		// Capture reply context before clearing
 		const replyId = replyToMessage?.id;
 		const replyContent = replyToMessage?.content;
+		const replyImages = replyToMessage?.images;
 		replyToMessage = null;
 
 		// Add the user message (snapshot the proxied conversation before mutating it)
@@ -87,8 +89,16 @@ function createChatStore() {
 		const newUserMsg = afterUser.messages[afterUser.messages.length - 1];
 
 		if (workflow && workflow.workflow && workflow.base_url) {
+			// Collect images: reply image gets IMAGE1 precedence, then uploaded images
+			const allImages: string[] = [];
+			if (replyImages && replyImages.length > 0) {
+				allImages.push(replyImages[0]);
+			}
+			if (images && images.length > 0) {
+				allImages.push(...images);
+			}
 			// Real ComfyUI generation — comfyStore.isGenerating handles the loading state
-			generateWithComfyUI(afterUser, newUserMsg.id, newUserMsg.content, workflow);
+			generateWithComfyUI(afterUser, newUserMsg.id, newUserMsg.content, workflow, allImages);
 		} else {
 			// Fake assistant response via service callback (no workflow selected)
 			isResponding = true;
@@ -111,13 +121,29 @@ function createChatStore() {
 		convo: Conversation,
 		replyToId: string,
 		userPrompt: string,
-		workflow: Workflow
+		workflow: Workflow,
+		images?: string[]
 	) {
 		try {
+			// Validate image overrides against provided images
+			const imageError = validateImageOverrides(workflow.overrides ?? [], images ?? []);
+			if (imageError) {
+				toast.error(imageError);
+				throw new Error(imageError);
+			}
+
+			// Upload images to ComfyUI and get filenames
+			let uploadedNames: string[] | undefined;
+			if (images && images.length > 0) {
+				const nameMap = await uploadImages(images, workflow.base_url);
+				uploadedNames = images.map((img) => nameMap.get(img) ?? '');
+			}
+
 			const merged = mergeWorkflow(
 				workflow.workflow,
 				workflow.overrides ?? [],
-				userPrompt
+				userPrompt,
+				uploadedNames
 			);
 
 			const result = await comfyStore.generate(workflow.base_url, merged);

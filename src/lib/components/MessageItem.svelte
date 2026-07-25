@@ -54,7 +54,7 @@
 	}
 
 	function getImageGridClass(count: number): string {
-		return count === 1 ? 'flex' : 'grid grid-cols-2 gap-1';
+		return count === 1 ? 'flex justify-end' : 'grid grid-cols-2 gap-1';
 	}
 
 	function startEdit() {
