@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { comfyStore } from '$lib/stores/comfy-store.svelte';
-	import { LoaderCircle, X, Bot } from 'lucide-svelte';
+	import { LoaderCircle, X } from 'lucide-svelte';
 
 	function formatTime(ms: number): string {
 		const totalSeconds = Math.floor(ms / 1000);
@@ -12,11 +12,6 @@
 
 <!-- Generating Message Row (matches MessageItem assistant layout) -->
 <div class="flex items-start gap-3">
-	<!-- Assistant Avatar -->
-	<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary">
-		<Bot class="h-4 w-4 text-primary-foreground" />
-	</div>
-
 	<!-- Message Stack -->
 	<div class="flex min-w-0 flex-col gap-1">
 		<!-- Message Bubble wrapper (matches MessageItem assistant style) -->
@@ -44,7 +39,7 @@
 		</div>
 
 		<!-- Progress + Timing (only while actively generating) -->
-		<div class="flex flex-col gap-1.5 px-1">
+		<div class="flex flex-col gap-1.5 px-1 ml-2">
 			{#if comfyStore.progressMax > 0}
 				<!-- Progress Bar -->
 				<div class="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -67,7 +62,6 @@
 
 			<!-- Status + Cancel -->
 			<div class="flex items-center gap-2">
-				<LoaderCircle class="h-3.5 w-3.5 animate-spin text-primary" />
 				<span class="text-xs text-muted-foreground">
 					{#if comfyStore.currentNode}
 						Executing node {comfyStore.currentNode}...
@@ -75,13 +69,6 @@
 						Generating...
 					{/if}
 				</span>
-				<button
-					onclick={() => comfyStore.cancel()}
-					class="ml-auto rounded p-0.5 text-muted-foreground hover:text-destructive cursor-pointer"
-					aria-label="Cancel generation"
-				>
-					<X class="h-3.5 w-3.5" />
-				</button>
 			</div>
 		</div>
 	</div>

@@ -270,37 +270,47 @@
 		</div>
 	{/if}
 
-	<!-- Input Row -->
-	<div class="flex items-end gap-2">
-		<!-- Attach Button -->
-		<Button
-			variant="ghost"
-			size="icon"
-			onclick={handleImageAttach}
-			class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
-			tabindex={7}
-		>
-			<ImagePlus class="h-4 w-4" />
-		</Button>
-
-		<!-- Textarea Container: min-w-0 prevents flex overflow from long text -->
-		<div class="flex min-w-0 flex-1 items-center">
+	<!-- Input Row: stacks on small screens, inline on wider -->
+	<div class="flex flex-col gap-2 sm:flex-row sm:items-end">
+		<!-- Textarea Row: textarea + attach button on mobile -->
+		<div class="flex min-w-0 items-center gap-2 sm:flex-1">
 			<Textarea
 				bind:ref={textareaEl}
 				bind:value={inputValue}
 				oninput={autoResize}
 				onkeydown={handleKeydown}
 				onpaste={handlePaste}
-				placeholder={pendingImages.length > 0 ? 'Add a caption...' : 'Type a message...'}
+				placeholder={pendingImages.length > 0 ? 'Add a caption...' : 'Enter a Prompt...'}
 				rows={1}
 				disabled={chatStore.isResponding}
-				class="min-h-8 max-h-44 w-full resize-none border-0 bg-transparent px-2 py-1 text-sm shadow-none focus-visible:ring-0"
+				class="min-h-8 max-h-44 flex-1 resize-none border-0 bg-transparent px-2 py-1 text-sm shadow-none focus-visible:ring-0 sm:w-full sm:flex-none"
 				tabindex={8}
 			/>
+			<!-- Attach Button: shown inline on mobile, inside controls on sm+ -->
+			<Button
+				variant="ghost"
+				size="icon"
+				onclick={handleImageAttach}
+				class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer sm:hidden"
+				tabindex={7}
+			>
+				<ImagePlus class="h-4 w-4" />
+			</Button>
 		</div>
 
-		<!-- Model/Send Controls -->
-		<div class="flex items-center gap-2 relative">
+		<!-- Controls Row -->
+		<div class="flex items-center justify-end gap-2 relative">
+			<!-- Attach Button: hidden on mobile (shown above), visible on sm+ -->
+			<Button
+				variant="ghost"
+				size="icon"
+				onclick={handleImageAttach}
+				class="hidden h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer sm:inline-flex"
+				tabindex={7}
+			>
+				<ImagePlus class="h-4 w-4" />
+			</Button>
+
 			<!-- Settings Button -->
 				<Tooltip>
 					<TooltipTrigger>
@@ -327,12 +337,12 @@
 					onclick={() => (showWorkflowDropdown = !showWorkflowDropdown)}
 					onblur={() => setTimeout(() => (showWorkflowDropdown = false), 150)}
 					onkeydown={handleWorkflowDropdownKeydown}
-					class="flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
-					tabindex={10}
-				>
-					<Box class="h-3.5 w-3.5" />
-					{selectedWorkflow?.name || 'No Workflow'}
-					<ChevronUp class="h-3 w-3" />
+			class="flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+				tabindex={10}
+			>
+				<Box class="h-3.5 w-3.5 shrink-0" />
+				<span class="max-w-[8rem] truncate">{selectedWorkflow?.name || 'No Workflow'}</span>
+				<ChevronUp class="h-3 w-3 shrink-0" />
 				</button>
 
 				<!-- Dropup Menu -->

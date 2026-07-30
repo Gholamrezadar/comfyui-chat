@@ -21,7 +21,7 @@ function getMimeType(base64: string): string {
 }
 
 export async function uploadImages(
-	base64Images: string[],
+	images: string[],
 	serverUrl: string
 ): Promise<Map<string, string>> {
 	const nameMap = new Map<string, string>();
@@ -29,28 +29,47 @@ export async function uploadImages(
 	// Build proxy URL: "http://127.0.0.1:8188" → "/comfyui-api"
 	const proxyBase = '/comfyui-api';
 
-	const tasks = base64Images.map(async (base64, i) => {
-		const mimeType = getMimeType(base64);
-		const ext = mimeType.split('/')[1] === 'jpeg' ? 'jpg' : mimeType.split('/')[1];
+	const tasks = images.map(async (image, i) => {
+		const isDataUrl = image.startsWith('data:');
+		const isHttpUrl = image.startsWith('http://') || image.startsWith('https://');
+
+		let blob: Blob;
+		let ext: string;
+
+		if (isDataUrl) {
+			const mimeType = getMimeType(image);
+			ext = mimeType.split('/')[1] === 'jpeg' ? 'jpg' : mimeType.split('/')[1];
+			blob = base64ToBlob(image, mimeType);
+		} else if (isHttpUrl) {
+			const response = await fetch(image);
+			if (!response.ok) {
+				throw new Error(`Failed to fetch image: HTTP ${response.status}`);
+			}
+			blob = await response.blob();
+			const mimeType = blob.type || 'image/png';
+			ext = mimeType.split('/')[1] === 'jpeg' ? 'jpg' : mimeType.split('/')[1];
+		} else {
+			throw new Error(`Unsupported image format: ${image.slice(0, 50)}`);
+		}
+
 		const filename = `chat_input_${Date.now()}_${i}.${ext}`;
-		const blob = base64ToBlob(base64, mimeType);
 
 		const formData = new FormData();
 		formData.append('image', blob, filename);
 		formData.append('type', 'input');
 		formData.append('overwrite', 'true');
 
-		const response = await fetch(`${proxyBase}/upload/image`, {
+		const uploadResponse = await fetch(`${proxyBase}/upload/image`, {
 			method: 'POST',
 			body: formData
 		});
 
-		if (!response.ok) {
-			throw new Error(`Image upload failed: HTTP ${response.status}`);
+		if (!uploadResponse.ok) {
+			throw new Error(`Image upload failed: HTTP ${uploadResponse.status}`);
 		}
 
-		const result = await response.json();
-		nameMap.set(base64, result.name);
+		const result = await uploadResponse.json();
+		nameMap.set(image, result.name);
 	});
 
 	await Promise.all(tasks);

@@ -3,7 +3,6 @@
 	import { comfyStore } from '$lib/stores/comfy-store.svelte';
 	import MessageItem from '$lib/components/MessageItem.svelte';
 	import GeneratingMessage from '$lib/components/GeneratingMessage.svelte';
-	import { Bot } from 'lucide-svelte';
 	import { tick } from 'svelte';
 
 	let scrollEl: HTMLDivElement | undefined = $state();
@@ -96,10 +95,6 @@
 			<GeneratingMessage />
 		{:else if chatStore.isResponding}
 			<div class="flex items-start gap-3">
-				<!-- Assistant Avatar -->
-				<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary">
-					<Bot class="h-4 w-4 text-primary-foreground" />
-				</div>
 				<!-- Typing Dots -->
 				<div class="flex items-center gap-1 pt-2">
 					<span class="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:0ms]"></span>
