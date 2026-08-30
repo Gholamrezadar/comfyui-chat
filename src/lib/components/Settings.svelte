@@ -4,11 +4,12 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { workflowStore } from '$lib/stores/workflow.store.svelte';
-	import { X, Plus, Trash2 } from 'lucide-svelte';
+	import { X, Plus, Trash2, Copy, Save } from 'lucide-svelte';
 	import type { WorkflowOverride } from '$lib/services/workflow.service';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import DynamicWorkflowBuilder from '$lib/components/DynamicWorkflowBuilder.svelte';
 	import { toast } from 'svelte-sonner';
+	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 
 	let { open = $bindable(false) }: { open: boolean } = $props();
 
@@ -103,6 +104,22 @@
 		}
 	}
 
+	async function handleClone() {
+		const wf = workflowStore.activeWorkflow;
+		if (!wf) return;
+
+		const baseName = wf.name.replace(/\s+\(Clone \d+\)$/i, '') || 'Workflow';
+		const clonePattern = new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\(Clone (\\d+)\\)$`, 'i');
+		const nextNumber =
+			workflowStore.workflows.reduce((max, workflow) => {
+				const match = workflow.name.match(clonePattern);
+				return match ? Math.max(max, Number(match[1])) : max;
+			}, 0) + 1;
+
+		await workflowStore.cloneWorkflow(wf, `${baseName} (Clone ${nextNumber})`);
+		toast.success('Workflow cloned');
+	}
+
 	function handleDelete() {
 		showDeleteConfirm = true;
 	}
@@ -186,7 +203,7 @@
 			<!-- Sidebar: Workflow List -->
 			<div class="flex w-48 flex-col border-r border-border md:rounded-l-2xl">
 				<!-- Sidebar Header -->
-				<div class="flex items-center justify-between border-b border-border px-4 py-3">
+				<div class="flex h-12 shrink-0 items-center justify-between border-b border-border px-4 py-0">
 					<h3 class="text-sm font-semibold text-foreground">Workflows</h3>
 					<Button
 						variant="ghost"
@@ -228,7 +245,7 @@
 			<!-- Main Panel -->
 			<div class="flex flex-1 flex-col md:rounded-r-2xl">
 				<!-- Action Bar: always visible -->
-				<div class="flex items-center justify-end gap-2 border-b border-border px-4 py-3">
+				<div class="flex h-12 shrink-0 items-center justify-end gap-2 border-b border-border px-4 py-0">
 					{#if workflowStore.activeWorkflow}
 						<Button
 							variant="default"
@@ -237,20 +254,43 @@
 							onclick={handleSave}
 							tabindex={-1}
 						>
+							<Save class="mr-1.5 h-3.5 w-3.5" />
 							Save
 						</Button>
 					{/if}
+					{#if workflowStore.activeWorkflow}
+						<Tooltip>
+							<TooltipTrigger>
+								<Button
+									variant="ghost"
+									size="icon"
+									class="h-7 w-7 cursor-pointer text-muted-foreground"
+									onclick={handleClone}
+									aria-label="Duplicate workflow"
+									tabindex={-1}
+								>
+									<Copy class="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Duplicate workflow</TooltipContent>
+						</Tooltip>
+					{/if}
 					{#if workflowStore.activeWorkflow && !isNewWorkflow}
-						<Button
-							variant="ghost"
-							size="icon"
-							class="h-7 w-7 cursor-pointer text-muted-foreground hover:text-destructive"
-							onclick={handleDelete}
-							aria-label="Delete workflow"
-							tabindex={-1}
-						>
-							<Trash2 class="h-4 w-4" />
-						</Button>
+						<Tooltip>
+							<TooltipTrigger>
+								<Button
+									variant="ghost"
+									size="icon"
+									class="h-7 w-7 cursor-pointer text-muted-foreground hover:text-destructive"
+									onclick={handleDelete}
+									aria-label="Delete workflow"
+									tabindex={-1}
+								>
+									<Trash2 class="h-4 w-4" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Delete workflow</TooltipContent>
+						</Tooltip>
 					{/if}
 					<Button
 						variant="ghost"

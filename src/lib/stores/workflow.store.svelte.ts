@@ -29,6 +29,19 @@ function createWorkflowStore() {
 		workflows = workflows.map((w) => (w.id === updated.id ? updated : w));
 	}
 
+	async function cloneWorkflow(workflow: Workflow, name: string) {
+		const clone = {
+			...workflowService.createWorkflow(),
+			name,
+			base_url: workflow.base_url,
+			workflow: workflow.workflow,
+			overrides: workflow.overrides.map((override) => ({ ...override }))
+		};
+		await workflowService.saveWorkflow(clone);
+		workflows = [clone, ...workflows];
+		activeId = clone.id;
+	}
+
 	async function deleteWorkflow(id: string) {
 		await workflowService.deleteWorkflow(id);
 		workflows = workflows.filter((w) => w.id !== id);
@@ -45,6 +58,7 @@ function createWorkflowStore() {
 		selectWorkflow,
 		newWorkflow,
 		saveWorkflow,
+		cloneWorkflow,
 		deleteWorkflow
 	};
 }
