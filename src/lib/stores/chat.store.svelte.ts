@@ -179,7 +179,7 @@ function createChatStore() {
 			const errorMsg: Message = {
 				id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
 				role: 'assistant',
-				content: wasCancelled ? 'Generation Cancelled!' : `Generation failed: ${e instanceof Error ? e.message : 'Unknown error'}`,
+				content: wasCancelled ? 'Generation Cancelled!' : `Generation failed: ${e instanceof Error ? e.message : 'Unknown error'}. Is ComfyUI running on your specified address?`,
 				timestamp: Date.now(),
 				replyToId,
 				replyToContent: userPrompt,

@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { chatStore } from '$lib/stores/chat.store.svelte';
 	import type { Message } from '$lib/services/chat.service';
-	import { Reply, Pencil, Trash2, X, Check, Ban } from 'lucide-svelte';
+	import { Reply, Pencil, Trash2, Copy, X, Check, Ban } from 'lucide-svelte';
 	import { tick } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 
@@ -23,6 +24,8 @@
 	let editContent = $state('');
 	let editTextareaEl: HTMLTextAreaElement | undefined = $state();
 	let showDeleteConfirm = $state(false);
+	let messageRowEl: HTMLDivElement | undefined = $state();
+	let editWidth = $state('');
 
 	const isUser = $derived(message.role === 'user');
 	const isEditing = $derived(chatStore.editingMessage?.id === message.id);
@@ -58,6 +61,8 @@
 	}
 
 	function startEdit() {
+		const messageBubble = messageRowEl?.querySelector<HTMLElement>('[data-message-bubble]');
+		editWidth = messageBubble ? `${messageBubble.getBoundingClientRect().width}px` : '';
 		editContent = message.content;
 		chatStore.setEditing(message);
 		tick().then(() => {
@@ -83,10 +88,12 @@
 		if (!trimmed) return;
 		chatStore.editMessage(message.id, trimmed);
 		editContent = '';
+		editWidth = '';
 	}
 
 	function cancelEdit() {
 		editContent = '';
+		editWidth = '';
 		chatStore.cancelEdit();
 	}
 
@@ -95,10 +102,20 @@
 		editTextareaEl.style.height = 'auto';
 		editTextareaEl.style.height = Math.min(editTextareaEl.scrollHeight, 180) + 'px';
 	}
+
+	async function copyMessage() {
+		try {
+			await navigator.clipboard.writeText(message.content);
+			toast.info('Copied!');
+		} catch {
+			toast.error('Unable to copy the message');
+		}
+	}
 </script>
 
 <!-- Message Row -->
 <div
+	bind:this={messageRowEl}
 	class={isUser ? 'group/msg flex items-end justify-end' : 'group/msg flex items-start gap-3'}
 	data-message-id={message.id}
 >
@@ -146,37 +163,47 @@
 
 		<!-- Edit Composer -->
 		{#if isEditing}
-			<div class="rounded-xl border border-ring bg-chat-bubble px-3 py-2">
+			<div
+				class={`rounded-xl ${
+					isUser
+						? 'overflow-hidden bg-chat-bubble px-4 py-1.5 text-foreground/85'
+						: 'w-fit max-w-full px-2 py-2'
+				}`}
+				style={editWidth ? `width: ${editWidth}` : undefined}
+			>
 				<textarea
 					bind:this={editTextareaEl}
 					bind:value={editContent}
 					oninput={handleEditInput}
 					onkeydown={handleEditKeydown}
 					rows={1}
-					class="w-full resize-none bg-transparent text-sm leading-relaxed text-foreground/85 focus:outline-none"
+					class="block w-full resize-none bg-transparent p-0 text-sm leading-relaxed text-foreground/85 focus:outline-none"
 					tabindex={0}
 				></textarea>
-				<!-- Edit Controls -->
-				<div class="mt-1.5 flex items-center justify-end gap-1">
-					<button
-						onclick={cancelEdit}
-						class="cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground"
-						tabindex={0}
-					>
-						<X class="h-3.5 w-3.5" />
-					</button>
-					<button
-						onclick={confirmEdit}
-						class="cursor-pointer rounded p-1 text-muted-foreground hover:text-primary"
-						tabindex={0}
-					>
-						<Check class="h-3.5 w-3.5" />
-					</button>
-				</div>
+			</div>
+			<!-- Edit Controls -->
+			<div class="flex items-center gap-1 opacity-100">
+				<button
+					onclick={cancelEdit}
+					class="cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground"
+					aria-label="Cancel edit"
+					tabindex={0}
+				>
+					<X class="h-3.5 w-3.5" />
+				</button>
+				<button
+					onclick={confirmEdit}
+					class="cursor-pointer rounded p-1 text-muted-foreground hover:text-primary"
+					aria-label="Accept edit"
+					tabindex={0}
+				>
+					<Check class="h-3.5 w-3.5" />
+				</button>
 			</div>
 		{:else}
 			<!-- Message Bubble -->
 			<div
+				data-message-bubble
 				class={`rounded-xl transition-colors duration-300 ${
 					isUser
 						? `overflow-hidden text-foreground/85 ${
@@ -265,6 +292,18 @@
 					<Reply class="h-3.5 w-3.5" />
 				</button>
 				
+				<!-- Copy Button (text messages only) -->
+				{#if message.content}
+					<button
+						onclick={copyMessage}
+						class="cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground"
+						aria-label="Copy message"
+						tabindex="-1"
+					>
+						<Copy class="h-3.5 w-3.5" />
+					</button>
+				{/if}
+
 				<!-- Edit Button -->
 				{#if isUser}
 				<button
@@ -276,7 +315,7 @@
 						<Pencil class="h-3.5 w-3.5" />
 					</button>
 					{/if}
-					
+
 					<!-- Delete Button -->
 					<button
 					onclick={() => (showDeleteConfirm = true)}

@@ -26,8 +26,19 @@ export async function uploadImages(
 ): Promise<Map<string, string>> {
 	const nameMap = new Map<string, string>();
 
-	// Build proxy URL: "http://127.0.0.1:8188" → "/comfyui-api"
-	const proxyBase = '/comfyui-api';
+	const serverBase = serverUrl.replace(/\/+$/, '');
+	const localHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
+	let uploadBase = serverBase;
+
+	// Keep the dev proxy for local development, but use the configured URL
+	// when the UI is hosted remotely (for example, on Vercel).
+	if (typeof window !== 'undefined' && localHosts.has(window.location.hostname)) {
+		try {
+			if (localHosts.has(new URL(serverBase).hostname)) uploadBase = '/comfyui-api';
+		} catch {
+			// The workflow URL is validated before generation.
+		}
+	}
 
 	const tasks = images.map(async (image, i) => {
 		const isDataUrl = image.startsWith('data:');
@@ -59,7 +70,7 @@ export async function uploadImages(
 		formData.append('type', 'input');
 		formData.append('overwrite', 'true');
 
-		const uploadResponse = await fetch(`${proxyBase}/upload/image`, {
+		const uploadResponse = await fetch(`${uploadBase}/upload/image`, {
 			method: 'POST',
 			body: formData
 		});
