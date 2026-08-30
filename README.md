@@ -1,42 +1,61 @@
-# sv
+# ComfyUI Chat
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A ChatGPT inspired WebUI for ComfyUI
 
-## Creating a project
+## Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+- Run saved ComfyUI workflows from a chat interface
+- Generate and edit images with text prompts
+- Upload local images for image-to-image workflows
+- Workflow editor with prompt and image overrides
+- Multiple conversations stored locally in the browser
+- Fullscreen image viewer with captions and keyboard navigation
+- Light and dark themes
 
-```sh
-# create a new project
-npx sv create my-app
-```
+## Demo
 
-To recreate this project with the same configuration:
+![Chat](demos/new_chat_demo.png)
 
-```sh
-# recreate this project
-bun x sv@0.15.2 create --template minimal --types ts --add prettier eslint tailwindcss="plugins:typography" --install bun comfyui-chat
-```
+![Light theme](demos/new_chat_demo_light.png)
 
-## Developing
+![Image generation and editing](demos/gen%2Bediting_demo.png)
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+![Fullscreen image viewer](demos/fullscreen_demo.png)
 
-```sh
-npm run dev
+![Workflow editor](demos/workflows_demo.png)
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+## Setup
 
-## Building
+Requirements:
 
-To create a production version of your app:
+- [Bun](https://bun.sh/)
+- A running [ComfyUI](https://github.com/comfyanonymous/ComfyUI) server
 
 ```sh
-npm run build
+bun install
+bun run dev
 ```
 
-You can preview the production build with `npm run preview`.
+Open the local URL, add a workflow in Settings, and enter your ComfyUI server URL, for example:
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+```text
+http://127.0.0.1:8188
+```
+
+## Build
+
+```sh
+bun run build
+bun run preview
+```
+
+## Credits
+
+- Gholamreza Dar 2026
+- MiMo 2.5
+- ChatGPT 5.6 Luna
+
+## AI Usage
+
+- Mainly AI for implementation and backend design
+- Human for UI/UX design and decision making
