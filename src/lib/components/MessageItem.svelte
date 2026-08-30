@@ -18,7 +18,7 @@
 		isHighlighted?: boolean;
 		isFading?: boolean;
 		scrollToMessage: (id: string) => void;
-		openLightbox: (src: string) => void;
+		openLightbox: (src: string, caption: string) => void;
 	} = $props();
 
 	let editContent = $state('');
@@ -38,6 +38,9 @@
 	const replyImages = $derived(repliedMessage?.images?.slice(0, 4) ?? []);
 	const visibleImages = $derived(message.images?.slice(0, 4) ?? []);
 	const hiddenImageCount = $derived(Math.max((message.images?.length ?? 0) - 4, 0));
+	const imageCaption = $derived(
+		(message.replyToId ? (message.replyToContent || repliedMessage?.content) : message.content) ?? ''
+	);
 
 	function formatTimestamp(ts: number): string {
 		return new Date(ts).toLocaleTimeString(undefined, {
@@ -230,7 +233,7 @@
 						<div class={`${getImageGridClass(visibleImages.length)} ${isUser ? '' : 'max-w-sm'}`}>
 							{#each visibleImages as img, i (img)}
 								<button
-									onclick={() => openLightbox(img)}
+										onclick={() => openLightbox(img, imageCaption)}
 									class="relative block cursor-pointer overflow-hidden {visibleImages.length === 1
 										? 'rounded-lg'
 										: 'first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg'}"
