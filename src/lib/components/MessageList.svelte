@@ -3,20 +3,16 @@
 	import { comfyStore } from '$lib/stores/comfy-store.svelte';
 	import MessageItem from '$lib/components/MessageItem.svelte';
 	import GeneratingMessage from '$lib/components/GeneratingMessage.svelte';
+	import LightboxGallery from '$lib/components/LightboxGallery.svelte';
+	import type { LightboxItem } from '$lib/components/LightboxGallery.svelte';
 	import { tick } from 'svelte';
 	import type { Message } from '$lib/services/chat.service';
-	import { ChevronLeft, ChevronRight } from 'lucide-svelte';
-
-	type LightboxItem = {
-		src: string;
-		caption: string;
-	};
 
 	const CAPTION_MAX_LENGTH = 120;
 
 	let scrollEl: HTMLDivElement | undefined = $state();
-	let lightboxItem = $state<LightboxItem | null>(null);
 	let lightboxIndex = $state(-1);
+	let lightboxImages = $state<LightboxItem[]>([]);
 	let highlightedMessageId = $state<string | null>(null);
 	let highlightFadeMessageId = $state<string | null>(null);
 	let highlightTimer: ReturnType<typeof setTimeout> | undefined;
@@ -87,107 +83,19 @@
 	function openLightbox(src: string, caption: string) {
 		const images = getConversationImages();
 		const index = images.findIndex((image) => image.src === src && image.caption === caption);
+		lightboxImages = images.length ? images : [{ src, caption }];
 		lightboxIndex = index >= 0 ? index : 0;
-		lightboxItem = images[lightboxIndex] ?? { src, caption };
 	}
 
 	function closeLightbox() {
-		lightboxItem = null;
 		lightboxIndex = -1;
-	}
-
-	function navigateLightbox(direction: -1 | 1) {
-		const images = getConversationImages();
-		if (!images.length) return closeLightbox();
-		const currentIndex = Math.max(0, lightboxIndex);
-		lightboxIndex = (currentIndex + direction + images.length) % images.length;
-		lightboxItem = images[lightboxIndex];
-	}
-
-	function handleLightboxKeydown(event: KeyboardEvent) {
-		if (!lightboxItem) return;
-		if (event.key === 'Escape') {
-			event.preventDefault();
-			closeLightbox();
-		} else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-			event.preventDefault();
-			navigateLightbox(-1);
-		} else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-			event.preventDefault();
-			navigateLightbox(1);
-		}
-	}
-
-	const SWIPE_THRESHOLD_PX = 50;
-	let touchStartX = 0;
-	let touchStartY = 0;
-
-	function handleLightboxTouchStart(event: TouchEvent) {
-		touchStartX = event.touches[0].clientX;
-		touchStartY = event.touches[0].clientY;
-	}
-
-	function handleLightboxTouchEnd(event: TouchEvent) {
-		const dx = event.changedTouches[0].clientX - touchStartX;
-		const dy = event.changedTouches[0].clientY - touchStartY;
-		if (Math.abs(dx) >= SWIPE_THRESHOLD_PX && Math.abs(dx) > Math.abs(dy)) {
-			event.preventDefault();
-			navigateLightbox(dx < 0 ? 1 : -1);
-		}
+		lightboxImages = [];
 	}
 </script>
 
-<svelte:window onkeydown={handleLightboxKeydown} />
-
-<!-- Image Lightbox -->
-{#if lightboxItem}
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm cursor-pointer touch-pan-y"
-		onclick={(event) => event.target === event.currentTarget && closeLightbox()}
-		onkeydown={(event) => event.key === 'Escape' && closeLightbox()}
-		ontouchstart={handleLightboxTouchStart}
-		ontouchend={handleLightboxTouchEnd}
-		role="dialog"
-		tabindex="0"
-		aria-label="Close image preview"
-	>
-		<div class="relative max-w-[90vw]">
-			<img
-				src={lightboxItem.src}
-				alt="Full size"
-				class="max-h-[82vh] max-w-[90vw] rounded-lg object-contain"
-			/>
-			{#if lightboxItem.caption}
-				<p
-					class="pointer-events-none absolute top-full left-1/2 mt-3 w-max max-w-[min(90vw,36rem)] -translate-x-1/2 text-center text-sm text-foreground/85"
-				>
-					{lightboxItem.caption}
-				</p>
-			{/if}
-		</div>
-		<button
-			type="button"
-			class="absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full p-2 text-foreground/70 transition-colors hover:bg-foreground/10 hover:text-foreground"
-			onclick={(event) => {
-				event.stopPropagation();
-				navigateLightbox(-1);
-			}}
-			aria-label="Previous image"
-		>
-			<ChevronLeft class="h-5 w-5" />
-		</button>
-		<button
-			type="button"
-			class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full p-2 text-foreground/70 transition-colors hover:bg-foreground/10 hover:text-foreground"
-			onclick={(event) => {
-				event.stopPropagation();
-				navigateLightbox(1);
-			}}
-			aria-label="Next image"
-		>
-			<ChevronRight class="h-5 w-5" />
-		</button>
-	</div>
+<!-- Image Lightbox Gallery -->
+{#if lightboxImages.length > 0 && lightboxIndex >= 0}
+	<LightboxGallery images={lightboxImages} bind:index={lightboxIndex} onClose={closeLightbox} />
 {/if}
 
 <!-- Message Scroll Container -->

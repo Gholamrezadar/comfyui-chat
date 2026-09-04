@@ -80,8 +80,21 @@
 		}
 	}
 
+	function dismissSidebarOnMobile() {
+		if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+			collapsed = true;
+			chatStore.saveSidebarState(false);
+		}
+	}
+
 	function handleSelectConvo(id: string) {
 		chatStore.selectConversation(id);
+		dismissSidebarOnMobile();
+	}
+
+	function handleNewConversation() {
+		chatStore.newConversation();
+		dismissSidebarOnMobile();
 	}
 
 	function handleDeleteConvo(e: MouseEvent, id: string) {
@@ -180,7 +193,7 @@
 					<Button
 						variant="ghost"
 						size="icon"
-						onclick={() => chatStore.newConversation()}
+						onclick={handleNewConversation}
 						class="h-9 w-9 cursor-pointer"
 					tabindex={2}
 				>
@@ -214,7 +227,7 @@
 			<Button
 				variant="ghost"
 				class="h-9 w-full justify-start gap-2 text-sm cursor-pointer"
-				onclick={() => chatStore.newConversation()}
+				onclick={handleNewConversation}
 				tabindex={2}
 			>
 				<Plus class="h-4 w-4 shrink-0" />
