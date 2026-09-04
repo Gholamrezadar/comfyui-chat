@@ -4,7 +4,7 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { workflowStore } from '$lib/stores/workflow.store.svelte';
-	import { X, Plus, Trash2, Copy, Save } from 'lucide-svelte';
+	import { X, Plus, Trash2, Copy, Save, ChevronDown } from 'lucide-svelte';
 	import type { WorkflowOverride } from '$lib/services/workflow.service';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import DynamicWorkflowBuilder from '$lib/components/DynamicWorkflowBuilder.svelte';
@@ -22,6 +22,8 @@
 	let editOverrides = $state<WorkflowOverride[]>([]);
 	let errors = $state<{ name?: string; base_url?: string; workflow?: string }>({});
 	let showDeleteConfirm = $state(false);
+	let showMobileWorkflowMenu = $state(false);
+	let mobileMenuEl: HTMLDivElement | undefined = $state();
 
 	// When a workflow is selected, load it into the editor fields
 	$effect(() => {
@@ -129,7 +131,32 @@
 	function handleSelect(id: string) {
 		if (hasUnsavedChanges || isNewWorkflow) return;
 		workflowStore.selectWorkflow(id);
+		showMobileWorkflowMenu = false;
 	}
+
+	function handleMobileMenuKeydown(event: KeyboardEvent) {
+		event.stopPropagation();
+		if (event.key === 'Escape') {
+			showMobileWorkflowMenu = false;
+		} else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+			event.preventDefault();
+			const list = workflowStore.workflows;
+			if (!list.length) return;
+			const current = list.findIndex((w) => w.id === workflowStore.activeId);
+			const next =
+				event.key === 'ArrowDown'
+					? (current + 1) % list.length
+					: (current - 1 + list.length) % list.length;
+			handleSelect(list[next].id);
+		}
+	}
+
+	// Focus the mobile menu when it opens for keyboard users
+	$effect(() => {
+		if (showMobileWorkflowMenu) {
+			requestAnimationFrame(() => mobileMenuEl?.focus());
+		}
+	});
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape' && open) {
@@ -155,9 +182,10 @@
 		}
 	}
 
-	// Auto-focus the Name input when the modal opens
+	// Auto-focus the Name input when the modal opens (desktop only —
+	// focusing on touch devices would pop the keyboard uninvited)
 	$effect(() => {
-		if (open) {
+		if (open && !window.matchMedia('(hover: none)').matches) {
 			const nameInput = document.getElementById('wf-name');
 			if (nameInput) {
 				requestAnimationFrame(() => nameInput.focus());
@@ -184,7 +212,7 @@
 	});
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} onclick={() => (showMobileWorkflowMenu = false)} />
 
 {#if open}
 	<div
@@ -200,8 +228,8 @@
 			tabindex="-1"
 			id="settings-dialog"
 		>
-			<!-- Sidebar: Workflow List -->
-			<div class="flex w-48 flex-col border-r border-border md:rounded-l-2xl">
+			<!-- Sidebar: Workflow List (desktop only; mobile uses the combobox below) -->
+			<div class="hidden w-48 flex-col border-r border-border md:flex md:rounded-l-2xl">
 				<!-- Sidebar Header -->
 				<div class="flex h-12 shrink-0 items-center justify-between border-b border-border px-4 py-0">
 					<h3 class="text-sm font-semibold text-foreground">Workflows</h3>
@@ -245,17 +273,84 @@
 			<!-- Main Panel -->
 			<div class="flex flex-1 flex-col md:rounded-r-2xl">
 				<!-- Action Bar: always visible -->
-				<div class="flex h-12 shrink-0 items-center justify-end gap-2 border-b border-border px-4 py-0">
+				<div class="flex h-12 shrink-0 items-center gap-2 border-b border-border px-4 py-0">
+					<!-- Mobile workflow selector, flushed left (sidebar is hidden on small screens) -->
+					<div class="relative min-w-0 flex-1 md:hidden">
+						<button
+							type="button"
+							class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-border bg-muted px-3 py-1.5 text-sm text-foreground transition-colors hover:text-foreground"
+							onclick={(event) => {
+								event.stopPropagation();
+								showMobileWorkflowMenu = !showMobileWorkflowMenu;
+							}}
+							aria-label="Select workflow"
+							aria-expanded={showMobileWorkflowMenu}
+						>
+							<span class="truncate font-medium">
+								{workflowStore.activeWorkflow?.name || 'Select workflow'}
+							</span>
+							<ChevronDown
+								class="h-4 w-4 shrink-0 text-muted-foreground transition-transform {showMobileWorkflowMenu
+									? 'rotate-180'
+									: ''}"
+							/>
+						</button>
+						{#if showMobileWorkflowMenu}
+							<div
+								bind:this={mobileMenuEl}
+								class="absolute top-full right-0 left-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-xl border border-border bg-card shadow-lg"
+								onclick={(event) => event.stopPropagation()}
+								onkeydown={handleMobileMenuKeydown}
+								role="listbox"
+								aria-label="Workflows"
+								tabindex={-1}
+							>
+								{#if workflowStore.workflows.length === 0}
+									<p class="px-4 py-3 text-center text-xs text-muted-foreground">
+										No workflows yet
+									</p>
+								{:else}
+									{#each workflowStore.workflows as wf (wf.id)}
+										<button
+											type="button"
+											role="option"
+											aria-selected={workflowStore.activeId === wf.id}
+											onclick={() => handleSelect(wf.id)}
+											class="flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-2.5 text-left text-sm transition-colors hover:bg-accent"
+											class:bg-accent={workflowStore.activeId === wf.id}
+										>
+											<span class="truncate font-medium text-foreground">
+												{wf.name || 'Untitled Workflow'}
+											</span>
+										</button>
+									{/each}
+								{/if}
+								<button
+									type="button"
+									onclick={() => {
+										handleNew();
+										showMobileWorkflowMenu = false;
+									}}
+									class="flex w-full cursor-pointer items-center gap-2 border-t border-border px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+								>
+									<Plus class="h-3.5 w-3.5 shrink-0" />
+									New workflow
+								</button>
+							</div>
+						{/if}
+					</div>
+					<div class="ml-auto flex shrink-0 items-center gap-2">
 					{#if workflowStore.activeWorkflow}
 						<Button
 							variant="default"
 							size="sm"
-							class="cursor-pointer px-4 text-xs"
+							class="cursor-pointer px-3 text-xs sm:px-4"
 							onclick={handleSave}
 							tabindex={-1}
+							aria-label="Save workflow"
 						>
-							<Save class="mr-1.5 h-3.5 w-3.5" />
-							Save
+							<Save class="h-3.5 w-3.5 sm:mr-1.5" />
+							<span class="hidden sm:inline">Save</span>
 						</Button>
 					{/if}
 					{#if workflowStore.activeWorkflow}
@@ -302,6 +397,7 @@
 					>
 						<X class="h-4 w-4" />
 					</Button>
+					</div>
 				</div>
 
 				{#if workflowStore.activeWorkflow}
@@ -345,7 +441,7 @@
 										bind:value={editWorkflowText}
 										placeholder="Paste your workflow JSON here..."
 										rows={10}
-										class="field-sizing-fixed font-mono text-xs {errors.workflow
+										class="field-sizing-fixed min-h-72 font-mono text-xs md:min-h-0 {errors.workflow
 											? 'border-destructive'
 											: ''}"
 										tabindex={3}
