@@ -29,6 +29,61 @@
 	let messageRowEl: HTMLDivElement | undefined = $state();
 	let editWidth = $state('');
 
+	// Swipe-to-reply: drag the bubble left, release past the trigger to reply.
+	// Clamped so the message can't be flung across the screen.
+	let replyDragX = $state(0);
+	let isDraggingReply = $state(false);
+	let replyDragPointerId: number | null = null;
+	let replyDragStartX = 0;
+	let replyDragStartY = 0;
+	let replyHorizontal: boolean | null = null;
+	let replySwiped = false;
+
+	const REPLY_DRAG_CLAMP_PX = 72;
+	const REPLY_DRAG_TRIGGER_PX = 48;
+
+	function handleReplyDragStart(event: PointerEvent) {
+		if (!event.isPrimary) return;
+		if (event.pointerType === 'mouse' && event.button !== 0) return;
+		replyDragPointerId = event.pointerId;
+		replyDragStartX = event.clientX;
+		replyDragStartY = event.clientY;
+		replyHorizontal = null;
+		replySwiped = false;
+		isDraggingReply = true;
+		window.addEventListener('pointermove', handleReplyDragMove);
+		window.addEventListener('pointerup', handleReplyDragEnd);
+		window.addEventListener('pointercancel', handleReplyDragEnd);
+	}
+
+	function handleReplyDragMove(event: PointerEvent) {
+		if (!isDraggingReply || event.pointerId !== replyDragPointerId) return;
+		const dx = event.clientX - replyDragStartX;
+		const dy = event.clientY - replyDragStartY;
+		if (replyHorizontal === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+			replyHorizontal = Math.abs(dx) > Math.abs(dy);
+		}
+		if (replyHorizontal) {
+			if (Math.abs(dx) > 12) replySwiped = true;
+			replyDragX = Math.max(-REPLY_DRAG_CLAMP_PX, Math.min(0, dx));
+		}
+	}
+
+	function handleReplyDragEnd(event: PointerEvent) {
+		if (!isDraggingReply || event.pointerId !== replyDragPointerId) return;
+		isDraggingReply = false;
+		window.removeEventListener('pointermove', handleReplyDragMove);
+		window.removeEventListener('pointerup', handleReplyDragEnd);
+		window.removeEventListener('pointercancel', handleReplyDragEnd);
+		replyDragPointerId = null;
+		replyHorizontal = null;
+		if (replyDragX <= -REPLY_DRAG_TRIGGER_PX) {
+			navigator.vibrate?.(30);
+			chatStore.setReplyTo(message);
+		}
+		replyDragX = 0;
+	}
+
 	const isUser = $derived(message.role === 'user');
 	const isEditing = $derived(chatStore.editingMessage?.id === message.id);
 	const repliedMessage = $derived(
@@ -203,24 +258,46 @@
 				</button>
 			</div>
 		{:else}
-			<!-- Message Bubble (user bubbles open the action sheet on tap) -->
-			<div
-				data-message-bubble
-				role={isUser ? 'button' : undefined}
-				{...(isUser ? { tabindex: 0 } : {})}
-				aria-label={isUser ? 'Open message actions' : undefined}
-				onclick={() => {
-					// Left-click/tap opens the sheet on touch devices only, so
-					// desktop users can select bubble text with the mouse.
-					if (
-						isUser &&
-						!isEditing &&
-						typeof window !== 'undefined' &&
-						window.matchMedia('(hover: none)').matches
-					) {
-						showActionsSheet = true;
-					}
-				}}
+			<!-- Swipe-to-reply wrapper: drag the bubble left to reveal the reply affordance -->
+			<div class="relative">
+				<div
+					class="absolute inset-y-0 right-0 flex items-center"
+					style="opacity: {Math.min(1, -replyDragX / REPLY_DRAG_TRIGGER_PX)};"
+					aria-hidden="true"
+				>
+					<span
+						class="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground"
+					>
+						<Reply class="h-3.5 w-3.5" />
+					</span>
+				</div>
+				<!-- Message Bubble (user bubbles open the action sheet on tap) -->
+				<div
+					data-message-bubble
+					role={isUser ? 'button' : undefined}
+					{...(isUser ? { tabindex: 0 } : {})}
+					aria-label={isUser ? 'Open message actions' : undefined}
+					style="transform: translateX({replyDragX}px); transition: {isDraggingReply
+						? 'none'
+						: 'transform 0.2s ease-out'};"
+					onpointerdown={handleReplyDragStart}
+					onclick={() => {
+						// A swipe that just ended may still fire click: swallow it.
+						if (replySwiped) {
+							replySwiped = false;
+							return;
+						}
+						// Left-click/tap opens the sheet on touch devices only, so
+						// desktop users can select bubble text with the mouse.
+						if (
+							isUser &&
+							!isEditing &&
+							typeof window !== 'undefined' &&
+							window.matchMedia('(hover: none)').matches
+						) {
+							showActionsSheet = true;
+						}
+					}}
 				oncontextmenu={(event) => {
 					// Desktop: right-click opens the sheet instead.
 					if (isUser && !isEditing) {
@@ -234,7 +311,7 @@
 						showActionsSheet = true;
 					}
 				}}
-				class={`rounded-xl transition-all duration-150 ${
+				class={`rounded-xl touch-pan-y transition-all duration-150 ${
 					isUser
 						? `overflow-hidden text-foreground/85 [@media(hover:none)]:cursor-pointer [@media(hover:none)]:active:scale-[0.99] [@media(hover:none)]:active:brightness-90 dark:[@media(hover:none)]:active:brightness-125 ${
 								isHighlighted && !isFading ? 'bg-black/20 dark:bg-white/30' : 'bg-chat-bubble'
@@ -298,6 +375,7 @@
 						</p>
 					{/if}
 				{/if}
+				</div>
 			</div>
 		{/if}
 
@@ -316,12 +394,10 @@
 						| Took {formatGenerationTime(message.generationTime)}
 					</span>
 				{/if}
-				<!-- Reply Button (assistant: always; user: hover-capable devices only, sheet otherwise) -->
+				<!-- Reply Button (hover-capable devices only; swipe-to-reply covers touch) -->
 				<button
 					onclick={() => chatStore.setReplyTo(message)}
-					class="cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground {isUser
-						? 'hidden [@media(hover:hover)]:block'
-						: ''}"
+					class="hidden cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground [@media(hover:hover)]:block"
 					aria-label="Reply"
 					tabindex="-1"
 				>
