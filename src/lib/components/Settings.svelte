@@ -4,9 +4,10 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { workflowStore } from '$lib/stores/workflow.store.svelte';
-	import { X, Plus, Trash2, Copy, Save, ChevronDown } from 'lucide-svelte';
+	import { X, Plus, Trash2, Copy, Save, ChevronDown, CircleHelp } from 'lucide-svelte';
 	import type { WorkflowOverride } from '$lib/services/workflow.service';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import InfoDialog from '$lib/components/InfoDialog.svelte';
 	import DynamicWorkflowBuilder from '$lib/components/DynamicWorkflowBuilder.svelte';
 	import { toast } from 'svelte-sonner';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
@@ -24,6 +25,8 @@
 	let showDeleteConfirm = $state(false);
 	let showMobileWorkflowMenu = $state(false);
 	let mobileMenuEl: HTMLDivElement | undefined = $state();
+	let showBaseUrlHelp = $state(false);
+	let showWorkflowHelp = $state(false);
 
 	// When a workflow is selected, load it into the editor fields
 	$effect(() => {
@@ -344,7 +347,7 @@
 						<Button
 							variant="default"
 							size="sm"
-							class="cursor-pointer px-3 text-xs sm:px-4"
+							class="h-8 w-8 cursor-pointer px-0 text-xs sm:w-auto sm:px-4"
 							onclick={handleSave}
 							tabindex={-1}
 							aria-label="Save workflow"
@@ -410,7 +413,7 @@
 										id="wf-name"
 										bind:value={editName}
 										placeholder="Enter workflow name..."
-										class={errors.name ? 'border-destructive' : ''}
+										class="rounded-lg {errors.name ? 'border-destructive' : ''}"
 										tabindex={1}
 									/>
 									{#if errors.name}
@@ -418,14 +421,25 @@
 									{/if}
 								</div>
 								<div class="flex flex-col gap-1.5">
-									<label for="wf-base-url" class="text-sm font-medium text-foreground"
-										>Base URL</label
+									<label
+										for="wf-base-url"
+										class="flex items-center gap-1.5 text-sm font-medium text-foreground"
 									>
+										Base URL
+										<button
+											type="button"
+											class="cursor-pointer rounded-full text-muted-foreground transition-colors hover:text-foreground"
+											onclick={() => (showBaseUrlHelp = true)}
+											aria-label="About base URL"
+										>
+											<CircleHelp class="h-4 w-4" />
+										</button>
+									</label>
 									<Input
 										id="wf-base-url"
 										bind:value={editBaseUrl}
 										placeholder="http://127.0.0.1:8188"
-										class={errors.base_url ? 'border-destructive' : ''}
+										class="rounded-lg {errors.base_url ? 'border-destructive' : ''}"
 										tabindex={2}
 									/>
 									{#if errors.base_url}
@@ -433,15 +447,26 @@
 									{/if}
 								</div>
 								<div class="flex flex-col gap-1.5">
-									<label for="wf-workflow" class="text-sm font-medium text-foreground"
-										>Workflow</label
+									<label
+										for="wf-workflow"
+										class="flex items-center gap-1.5 text-sm font-medium text-foreground"
 									>
+										Workflow
+										<button
+											type="button"
+											class="cursor-pointer rounded-full text-muted-foreground transition-colors hover:text-foreground"
+											onclick={() => (showWorkflowHelp = true)}
+											aria-label="About workflow JSON"
+										>
+											<CircleHelp class="h-4 w-4" />
+										</button>
+									</label>
 									<Textarea
 										id="wf-workflow"
 										bind:value={editWorkflowText}
 										placeholder="Paste your workflow JSON here..."
 										rows={10}
-										class="field-sizing-fixed min-h-72 font-mono text-xs md:min-h-0 {errors.workflow
+										class="field-sizing-fixed min-h-72 rounded-lg font-mono text-xs md:min-h-0 {errors.workflow
 											? 'border-destructive'
 											: ''}"
 										tabindex={3}
@@ -477,6 +502,22 @@
 		</div>
 	</div>
 {/if}
+
+<InfoDialog
+	bind:open={showBaseUrlHelp}
+	title="Base URL"
+	message='The HTTP address of your ComfyUI server, e.g. http://127.0.0.1:8188.'
+/>
+
+<InfoDialog
+	bind:open={showWorkflowHelp}
+	title="Workflow JSON"
+	bullets={[
+		'Your ComfyUI workflow in API-format JSON.',
+		'Export from ComfyUI using Export API format',
+		'Overrides below are applied on top of this workflow on every run.'
+	]}
+/>
 
 <ConfirmDialog
 	bind:open={showDeleteConfirm}

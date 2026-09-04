@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { X, Plus, ChevronDown } from 'lucide-svelte';
+	import { X, Plus, ChevronDown, CircleHelp } from 'lucide-svelte';
+	import InfoDialog from '$lib/components/InfoDialog.svelte';
 	import type { WorkflowOverride } from '$lib/services/workflow.service';
 
 	let {
@@ -22,6 +23,7 @@
 	let rows = $state<OverrideRow[]>(initialOverrides.map((o, i) => ({ id: i, path: o.path, value: o.value })));
 	let idSeq = $state(initialOverrides.length);
 	let openPresetRowId = $state<number | null>(null);
+	let showHintDialog = $state(false);
 
 	const PRESET_VALUES = ['PROMPT', 'IMAGE1', 'IMAGE2', 'IMAGE3', 'IMAGE4'];
 
@@ -172,18 +174,24 @@
 <svelte:window onclick={() => (openPresetRowId = null)} />
 
 <div class="flex flex-col gap-1.5">
-	<label class="text-sm font-medium text-foreground">
+	<label class="flex items-center gap-1.5 text-sm font-medium text-foreground">
 		Overrides
-		<span class="text-xs font-normal text-muted-foreground">(double-click a field to override, use PROMPT for chat text, IMAGE1-4 for uploaded images)</span
+		<button
+			type="button"
+			class="cursor-pointer rounded-full text-muted-foreground transition-colors hover:text-foreground"
+			onclick={() => (showHintDialog = true)}
+			aria-label="About overrides"
 		>
+			<CircleHelp class="h-4 w-4" />
+		</button>
 	</label>
 	{#if rows.length > 0}
 		<div class="flex flex-col gap-1.5">
 			{#each rows as r (r.id)}
 				<div class="flex items-center gap-1.5">
-					<Input bind:value={r.path} placeholder="path" class="flex-1 font-mono text-xs" />
+					<Input bind:value={r.path} placeholder="path" class="flex-1 rounded-lg font-mono text-xs" />
 					<div class="relative flex-1">
-						<Input bind:value={r.value} placeholder="value" class="pr-7 font-mono text-xs" />
+						<Input bind:value={r.value} placeholder="value" class="rounded-lg pr-7 font-mono text-xs" />
 						<button
 							type="button"
 							class="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer rounded p-0.5 text-muted-foreground hover:text-foreground"
@@ -238,3 +246,13 @@
 		</Button>
 	</div>
 </div>
+
+<InfoDialog
+	bind:open={showHintDialog}
+	title="Workflow overrides"
+	bullets={[
+		'Double-click a field to add it as an override.',
+		'Use PROMPT for the chat text.',
+		'Use IMAGE1\u2013IMAGE4 for uploaded images.'
+	]}
+/>
