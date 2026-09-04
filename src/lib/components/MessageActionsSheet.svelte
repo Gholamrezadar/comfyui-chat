@@ -3,11 +3,13 @@
 
 	let {
 		open = $bindable(false),
+		showEdit = false,
 		onReply,
 		onEdit,
 		onDelete
 	}: {
 		open: boolean;
+		showEdit?: boolean;
 		onReply: () => void;
 		onEdit: () => void;
 		onDelete: () => void;
@@ -57,17 +59,19 @@
 					<Reply class="h-4 w-4 shrink-0 text-muted-foreground" />
 					Reply
 				</button>
-				<button
-					type="button"
-					class="flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-left text-sm text-foreground transition-colors hover:bg-accent"
-					onclick={() => {
-						close();
-						onEdit();
-					}}
-				>
-					<Pencil class="h-4 w-4 shrink-0 text-muted-foreground" />
-					Edit
-				</button>
+				{#if showEdit}
+					<button
+						type="button"
+						class="flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-left text-sm text-foreground transition-colors hover:bg-accent"
+						onclick={() => {
+							close();
+							onEdit();
+						}}
+					>
+						<Pencil class="h-4 w-4 shrink-0 text-muted-foreground" />
+						Edit
+					</button>
+				{/if}
 				<button
 					type="button"
 					class="flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-left text-sm text-destructive transition-colors hover:bg-destructive/10"

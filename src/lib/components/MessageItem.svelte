@@ -44,7 +44,12 @@
 
 	function handleReplyDragStart(event: PointerEvent) {
 		if (!event.isPrimary) return;
-		if (event.pointerType === 'mouse' && event.button !== 0) return;
+		// Desktop users select text with the mouse: only allow touch pointers to start a swipe.
+		if (event.pointerType !== 'touch') return;
+		if (longPressSuppressReply) {
+			longPressSuppressReply = false;
+			return;
+		}
 		replyDragPointerId = event.pointerId;
 		replyDragStartX = event.clientX;
 		replyDragStartY = event.clientY;
@@ -82,6 +87,47 @@
 			chatStore.setReplyTo(message);
 		}
 		replyDragX = 0;
+	}
+
+	// Long-press on a bubble opens the actions sheet (mobile only). Cancel
+	// the swipe gesture if a long-press fires so they never both trigger.
+	const LONG_PRESS_MS = 500;
+	const LONG_PRESS_MOVE_PX = 12;
+	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+	let longPressStart = { x: 0, y: 0 };
+	let longPressSuppressReply = false;
+
+	function cancelLongPress() {
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
+	}
+
+	function handleBubblePointerDown(event: PointerEvent) {
+		// Desktop uses right-click; mobile only.
+		if (!event.isPrimary || event.pointerType !== 'touch') return;
+		longPressSuppressReply = false;
+		longPressStart = { x: event.clientX, y: event.clientY };
+		cancelLongPress();
+		longPressTimer = setTimeout(() => {
+			longPressTimer = null;
+			longPressSuppressReply = true;
+			navigator.vibrate?.(30);
+			openActionsSheet();
+		}, LONG_PRESS_MS);
+	}
+
+	function handleBubblePointerMove(event: PointerEvent) {
+		if (!longPressTimer) return;
+		if (Math.hypot(event.clientX - longPressStart.x, event.clientY - longPressStart.y) > LONG_PRESS_MOVE_PX) {
+			cancelLongPress();
+		}
+	}
+
+	function openActionsSheet() {
+		if (isEditing) return;
+		showActionsSheet = true;
 	}
 
 	const isUser = $derived(message.role === 'user');
@@ -280,7 +326,13 @@
 					style="transform: translateX({replyDragX}px); transition: {isDraggingReply
 						? 'none'
 						: 'transform 0.2s ease-out'};"
-					onpointerdown={handleReplyDragStart}
+					onpointerdown={(event) => {
+						handleReplyDragStart(event);
+						handleBubblePointerDown(event);
+					}}
+					onpointermove={handleBubblePointerMove}
+					onpointerup={cancelLongPress}
+					onpointercancel={cancelLongPress}
 					onclick={() => {
 						// A swipe that just ended may still fire click: swallow it.
 						if (replySwiped) {
@@ -295,22 +347,22 @@
 							typeof window !== 'undefined' &&
 							window.matchMedia('(hover: none)').matches
 						) {
-							showActionsSheet = true;
+							openActionsSheet();
 						}
 					}}
-				oncontextmenu={(event) => {
-					// Desktop: right-click opens the sheet instead.
-					if (isUser && !isEditing) {
-						event.preventDefault();
-						showActionsSheet = true;
-					}
-				}}
-				onkeydown={(event) => {
-					if (isUser && !isEditing && (event.key === 'Enter' || event.key === ' ')) {
-						event.preventDefault();
-						showActionsSheet = true;
-					}
-				}}
+					oncontextmenu={(event) => {
+						// Desktop: right-click opens the sheet instead.
+						if (!isEditing) {
+							event.preventDefault();
+							openActionsSheet();
+						}
+					}}
+					onkeydown={(event) => {
+						if (!isEditing && (event.key === 'Enter' || event.key === ' ')) {
+							event.preventDefault();
+							openActionsSheet();
+						}
+					}}
 				class={`rounded-xl touch-pan-y transition-all duration-150 ${
 					isUser
 						? `overflow-hidden text-foreground/85 [@media(hover:none)]:cursor-pointer [@media(hover:none)]:active:scale-[0.99] [@media(hover:none)]:active:brightness-90 dark:[@media(hover:none)]:active:brightness-125 ${
@@ -428,14 +480,12 @@
 					</button>
 				{/if}
 
-				<!-- Delete Button (assistant: always; user: hover-capable devices only, sheet otherwise) -->
+				<!-- Delete Button (desktop only; mobile uses the action sheet) -->
 				<button
 					onclick={() => (showDeleteConfirm = true)}
-					class="cursor-pointer rounded p-1 text-muted-foreground hover:text-destructive {isUser
-						? 'hidden [@media(hover:hover)]:block'
-						: ''}"
+					class="hidden cursor-pointer rounded p-1 text-muted-foreground hover:text-destructive [@media(hover:hover)]:block"
 					aria-label="Delete"
-					tabindex="-1"
+					tabindex={-1}
 				>
 					<Trash2 class="h-3.5 w-3.5" />
 				</button>
@@ -454,6 +504,7 @@
 
 <MessageActionsSheet
 	bind:open={showActionsSheet}
+	showEdit={isUser}
 	onReply={() => chatStore.setReplyTo(message)}
 	onEdit={startEdit}
 	onDelete={() => (showDeleteConfirm = true)}
