@@ -63,7 +63,7 @@
 		setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 	}
 
-	const MAX_VISIBLE_DOTS = 9;
+	const MAX_VISIBLE_DOTS = 7;
 	const visibleDotIndices = $derived.by(() => {
 		const count = images.length;
 		if (count <= MAX_VISIBLE_DOTS) return Array.from({ length: count }, (_, i) => i);
@@ -71,6 +71,7 @@
 		let start = Math.min(Math.max(index - half, 0), count - MAX_VISIBLE_DOTS);
 		return Array.from({ length: MAX_VISIBLE_DOTS }, (_, i) => start + i);
 	});
+	const allDotIndices = $derived(images.map((_, i) => i));
 
 	function handleLightboxKeydown(event: KeyboardEvent) {
 		if (!images.length) return;
@@ -350,7 +351,7 @@
 				onpointerup={(event) => endDotsScrub(event)}
 				onpointercancel={(event) => endDotsScrub(event)}
 			>
-				{#each visibleDotIndices as i (i)}
+				{#each allDotIndices as i (i)}
 					<button
 						type="button"
 						aria-current={i === index ? 'true' : undefined}
@@ -360,9 +361,10 @@
 							if (suppressDotClick) return;
 							goToLightbox(i);
 						}}
+						class:hidden={!visibleDotIndices.includes(i)}
 						class="h-1.5 cursor-pointer rounded-full transition-all duration-300 {i === index
-							? 'w-6 bg-white'
-							: 'w-1.5 bg-white/40 hover:bg-white/70'}"
+							? 'w-6 bg-foreground dark:bg-white'
+							: 'w-1.5 bg-foreground/60 hover:bg-foreground/80 dark:bg-white/40 dark:hover:bg-white/70'}"
 					></button>
 				{/each}
 			</div>
