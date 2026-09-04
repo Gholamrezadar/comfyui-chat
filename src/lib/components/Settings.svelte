@@ -4,7 +4,17 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { workflowStore } from '$lib/stores/workflow.store.svelte';
-	import { X, Plus, Trash2, Copy, Save, ChevronDown, CircleHelp } from 'lucide-svelte';
+	import {
+		X,
+		Plus,
+		Trash2,
+		Copy,
+		Save,
+		ChevronDown,
+		CircleHelp,
+		Maximize2,
+		Minimize2
+	} from 'lucide-svelte';
 	import type { WorkflowOverride } from '$lib/services/workflow.service';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import InfoDialog from '$lib/components/InfoDialog.svelte';
@@ -27,6 +37,7 @@
 	let mobileMenuEl: HTMLDivElement | undefined = $state();
 	let showBaseUrlHelp = $state(false);
 	let showWorkflowHelp = $state(false);
+	let workflowExpanded = $state(false);
 
 	// When a workflow is selected, load it into the editor fields
 	$effect(() => {
@@ -163,9 +174,16 @@
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape' && open) {
-			open = false;
+			// Collapse the expanded editor first, close settings second
+			if (workflowExpanded) workflowExpanded = false;
+			else open = false;
 		}
 	}
+
+	// Reset the expanded editor whenever settings close
+	$effect(() => {
+		if (!open) workflowExpanded = false;
+	});
 
 	// Handle ESC key directly on the dialog (stopPropagation prevents window handler)
 	function handleDialogKeydown(e: KeyboardEvent) {
@@ -216,6 +234,28 @@
 </script>
 
 <svelte:window onkeydown={handleKeydown} onclick={() => (showMobileWorkflowMenu = false)} />
+
+<!-- Shared workflow JSON editor: rendered inline and in the expanded overlay so all
+     functionality (incl. double-click override) works in both -->
+{#snippet workflowEditor(textareaId: string, expanded: boolean)}
+	<Textarea
+		id={textareaId}
+		bind:value={editWorkflowText}
+		placeholder="Paste your workflow JSON here..."
+		rows={10}
+		class="field-sizing-fixed rounded-lg font-mono text-xs {expanded
+			? 'min-h-0 flex-1'
+			: 'min-h-72 md:min-h-0'} {errors.workflow ? 'border-destructive' : ''}"
+		tabindex={3}
+		ondblclick={(e) => {
+			const textarea = e.target as HTMLTextAreaElement;
+			dynamicBuilder?.addRowAtOffset(textarea.selectionStart);
+		}}
+	/>
+	{#if errors.workflow}
+		<p class="text-xs text-destructive">{errors.workflow}</p>
+	{/if}
+{/snippet}
 
 {#if open}
 	<div
@@ -447,37 +487,31 @@
 									{/if}
 								</div>
 								<div class="flex flex-col gap-1.5">
-									<label
-										for="wf-workflow"
-										class="flex items-center gap-1.5 text-sm font-medium text-foreground"
-									>
-										Workflow
+									<div class="flex items-center justify-between">
+										<label
+											for="wf-workflow"
+											class="flex items-center gap-1.5 text-sm font-medium text-foreground"
+										>
+											Workflow
+											<button
+												type="button"
+												class="cursor-pointer rounded-full text-muted-foreground transition-colors hover:text-foreground"
+												onclick={() => (showWorkflowHelp = true)}
+												aria-label="About workflow JSON"
+											>
+												<CircleHelp class="h-4 w-4" />
+											</button>
+										</label>
 										<button
 											type="button"
-											class="cursor-pointer rounded-full text-muted-foreground transition-colors hover:text-foreground"
-											onclick={() => (showWorkflowHelp = true)}
-											aria-label="About workflow JSON"
+											class="cursor-pointer rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+											onclick={() => (workflowExpanded = true)}
+											aria-label="Expand workflow editor"
 										>
-											<CircleHelp class="h-4 w-4" />
+											<Maximize2 class="h-4 w-4" />
 										</button>
-									</label>
-									<Textarea
-										id="wf-workflow"
-										bind:value={editWorkflowText}
-										placeholder="Paste your workflow JSON here..."
-										rows={10}
-										class="field-sizing-fixed min-h-72 rounded-lg font-mono text-xs md:min-h-0 {errors.workflow
-											? 'border-destructive'
-											: ''}"
-										tabindex={3}
-										ondblclick={(e) => {
-											const textarea = e.target as HTMLTextAreaElement;
-											dynamicBuilder?.addRowAtOffset(textarea.selectionStart);
-										}}
-									/>
-									{#if errors.workflow}
-										<p class="text-xs text-destructive">{errors.workflow}</p>
-									{/if}
+									</div>
+									{@render workflowEditor('wf-workflow', false)}
 								</div>
 
 								<!-- Workflow Overrides -->
@@ -501,6 +535,22 @@
 			</div>
 		</div>
 	</div>
+	{#if workflowExpanded}
+		<div class="fixed inset-0 z-[60] flex flex-col gap-2 bg-card p-4">
+			<div class="flex shrink-0 items-center justify-between">
+				<span class="text-sm font-medium text-foreground">Workflow</span>
+				<button
+					type="button"
+					class="cursor-pointer rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+					onclick={() => (workflowExpanded = false)}
+					aria-label="Shrink workflow editor"
+				>
+					<Minimize2 class="h-4 w-4" />
+				</button>
+			</div>
+			{@render workflowEditor('wf-workflow-expanded', true)}
+		</div>
+	{/if}
 {/if}
 
 <InfoDialog
