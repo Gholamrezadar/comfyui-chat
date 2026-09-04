@@ -1,9 +1,11 @@
 <script lang="ts">
-	import { ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import { ChevronLeft, ChevronRight, Download } from 'lucide-svelte';
 
 	export type LightboxItem = {
 		src: string;
 		caption: string;
+		seed?: number;
+		id?: string;
 	};
 
 	let {
@@ -44,6 +46,21 @@
 	function handleClose() {
 		resetLightboxDrag();
 		onClose();
+	}
+
+	async function downloadCurrentImage() {
+		if (!lightboxItem) return;
+		const response = await fetch(lightboxItem.src);
+		const blobUrl = URL.createObjectURL(await response.blob());
+		const link = document.createElement('a');
+		link.href = blobUrl;
+		const safeName = (lightboxItem.caption || 'comfyui-image').trim().slice(0, 40).replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'comfyui-image';
+		const randomId = Math.random().toString(36).slice(2, 8);
+		link.download = `${safeName}-${randomId}-${index + 1}.png`;
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 	}
 
 	const MAX_VISIBLE_DOTS = 9;
@@ -309,6 +326,14 @@
 				</button>
 			{/if}
 		</div>
+		<button
+			type="button"
+			class="absolute top-4 left-4 cursor-pointer rounded-full p-2 text-foreground/70 transition-colors hover:bg-foreground/10 hover:text-foreground"
+			onclick={(event) => { event.stopPropagation(); downloadCurrentImage(); }}
+			aria-label="Download image"
+		>
+			<Download class="h-5 w-5" />
+		</button>
 
 		<!-- Position dots: active is a white pill, rest are small circles; drag across to scrub.
 			The padded strip is a forgiving tap target: taps land on the nearest

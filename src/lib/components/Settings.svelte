@@ -83,6 +83,11 @@
 				newErrors.workflow = 'Must be valid JSON';
 			}
 		}
+		const hasWidth = editOverrides.some((o) => o.value === 'WIDTH');
+		const hasHeight = editOverrides.some((o) => o.value === 'HEIGHT');
+		if (hasWidth !== hasHeight) {
+			newErrors.workflow = 'WIDTH and HEIGHT overrides must be configured together';
+		}
 		errors = newErrors;
 		return Object.keys(newErrors).length === 0;
 	}

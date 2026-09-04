@@ -395,6 +395,7 @@
 			</Button>
 
 			<!-- Clear Button -->
+				<div class="sm:hidden">
 				<Tooltip>
 					<TooltipTrigger>
 						<Button
@@ -403,7 +404,7 @@
 							onclick={clearComposer}
 							onmousedown={(event) => event.preventDefault()}
 							disabled={!inputValue && pendingImages.length === 0}
-							class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
+					class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer sm:hidden"
 							tabindex={9}
 						>
 							<Eraser class="h-4 w-4" />
@@ -411,6 +412,7 @@
 					</TooltipTrigger>
 					<TooltipContent>Clear input</TooltipContent>
 				</Tooltip>
+				</div>
 
 			<!-- Settings Button -->
 			<Tooltip>

@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { X, RefreshCw, Dices } from 'lucide-svelte';
+	import { X, RefreshCw, Dices, ChevronDown, Check, Save, List, Pencil } from 'lucide-svelte';
 	import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '$lib/components/ui/tooltip';
+	import * as settingsService from '$lib/services/settings.service';
+	const RESOLUTIONS = ['1024 x 1024', '768 x 1024', '1024 x 768', '1280 x 720', '1920 x 1080'];
 
 	let {
 		open = $bindable(false),
@@ -19,6 +21,43 @@
 		width?: number;
 		height?: number;
 	} = $props();
+	let customResolution = $state(false);
+	let selectedResolution = $state('1024x1024');
+	let showResolutionMenu = $state(false);
+	let customResolutions = $state<string[]>(settingsService.loadCustomResolutions());
+	let hiddenResolutions = $state<string[]>(settingsService.loadHiddenResolutions());
+	let allResolutions = $derived([...RESOLUTIONS, ...customResolutions].filter((resolution, index, values) => values.indexOf(resolution) === index && !hiddenResolutions.includes(resolution)));
+
+	function selectResolution(value: string) {
+		selectedResolution = value;
+		const [nextWidth, nextHeight] = value.split(' x ').map(Number);
+		width = nextWidth;
+		height = nextHeight;
+	}
+
+	function saveCustomResolution() {
+		const value = `${width} x ${height}`;
+		if (!width || !height || customResolutions.includes(value)) return;
+		customResolutions = [...customResolutions, value];
+		settingsService.saveCustomResolutions(customResolutions);
+		selectedResolution = value;
+		customResolution = false;
+	}
+
+	function deleteCustomResolution(value: string) {
+		if (RESOLUTIONS.includes(value)) {
+			hiddenResolutions = [...hiddenResolutions, value];
+			settingsService.saveHiddenResolutions(hiddenResolutions);
+		} else {
+			customResolutions = customResolutions.filter((resolution) => resolution !== value);
+			settingsService.saveCustomResolutions(customResolutions);
+		}
+		if (selectedResolution === value) selectResolution(RESOLUTIONS[0]);
+	}
+
+	$effect(() => {
+		if (!customResolution) selectedResolution = `${width} x ${height}`;
+	});
 </script>
 
 {#if open}
@@ -56,14 +95,43 @@
 						</div>
 					</div>
 				{/if}
-				{#if overrides.includes('WIDTH')}
-					<label class="grid gap-1.5 text-sm text-foreground">Width<Input type="number" bind:value={width} min="1" /></label>
-				{/if}
-				{#if overrides.includes('HEIGHT')}
-					<label class="grid gap-1.5 text-sm text-foreground">Height<Input type="number" bind:value={height} min="1" /></label>
+				{#if overrides.includes('WIDTH') && overrides.includes('HEIGHT')}
+					<div class="grid gap-1.5">
+						<label for="generation-resolution" class="text-sm text-foreground">Resolution</label>
+						{#if customResolution}
+													<div class="flex items-center gap-2">
+								<Input type="number" bind:value={width} min="1" aria-label="Width" />
+								<span class="text-muted-foreground">x</span>
+								<Input type="number" bind:value={height} min="1" aria-label="Height" />
+														<div class="flex gap-1"><Tooltip><TooltipTrigger><Button variant="outline" size="icon-sm" class="cursor-pointer" onclick={saveCustomResolution} aria-label="Save custom resolution"><Save class="h-3.5 w-3.5" /></Button></TooltipTrigger><TooltipContent>Save custom resolution</TooltipContent></Tooltip><Tooltip><TooltipTrigger><Button variant="outline" size="icon-sm" class="cursor-pointer" onclick={() => (customResolution = false)} aria-label="Show resolution presets"><List class="h-3.5 w-3.5" /></Button></TooltipTrigger><TooltipContent>Show resolution presets</TooltipContent></Tooltip></div>
+							</div>
+						{:else}
+							<div class="flex items-center gap-2">
+								<div class="relative min-w-0 flex-1">
+									<button id="generation-resolution" type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-full border border-border bg-muted px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground" aria-haspopup="listbox" aria-expanded={showResolutionMenu} onclick={() => (showResolutionMenu = !showResolutionMenu)}>
+										<span>{selectedResolution}</span>
+										<ChevronDown class="h-3 w-3 shrink-0" />
+									</button>
+									{#if showResolutionMenu}
+										<div class="absolute bottom-full left-0 z-50 mb-2 w-full overflow-hidden rounded-xl border border-border bg-card py-1 shadow-lg" role="listbox">
+																	{#each allResolutions as resolution}
+																		<div role="option" tabindex="0" aria-selected={selectedResolution === resolution} class="flex w-full cursor-pointer items-center justify-between px-3 py-2 text-left text-xs text-foreground transition-colors hover:bg-accent" onclick={() => { selectResolution(resolution); showResolutionMenu = false; }} onkeydown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectResolution(resolution); showResolutionMenu = false; } }}>
+																			<span>{resolution}</span><span class="flex items-center gap-2">{#if selectedResolution === resolution}<Check class="h-3.5 w-3.5 text-primary" />{/if}<button type="button" class="cursor-pointer text-muted-foreground hover:text-destructive" onclick={(event) => { event.stopPropagation(); deleteCustomResolution(resolution); }} aria-label={`Delete ${resolution}`}><X class="h-3.5 w-3.5" /></button></span>
+																			</div>
+											{/each}
+										</div>
+									{/if}
+								</div>
+								<Tooltip>
+									<TooltipTrigger><Button variant="outline" size="icon-sm" class="cursor-pointer" onclick={() => (customResolution = true)} aria-label="Enter custom resolution"><Pencil class="h-3.5 w-3.5" /></Button></TooltipTrigger>
+									<TooltipContent>Custom resolution</TooltipContent>
+								</Tooltip>
+							</div>
+						{/if}
+					</div>
 				{/if}
 			</div>
-			<Button class="mt-5 w-full cursor-pointer" onclick={() => (open = false)}>Done</Button>
+			<Button class="mt-5 w-full cursor-pointer" onclick={() => (open = false)}><Save class="mr-1.5 h-4 w-4" />Save</Button>
 		</div>
 		</TooltipProvider>
 	</div>

@@ -130,6 +130,22 @@
 		showActionsSheet = true;
 	}
 
+	async function downloadMessageImage() {
+		const image = message.images?.[0];
+		if (!image) return;
+		const response = await fetch(image);
+		const blobUrl = URL.createObjectURL(await response.blob());
+		const link = document.createElement('a');
+		link.href = blobUrl;
+		const safeName = (message.replyToContent || message.content || 'comfyui-image').trim().slice(0, 40).replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'comfyui-image';
+		const randomId = Math.random().toString(36).slice(2, 8);
+		link.download = `${safeName}-${randomId}.png`;
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+	}
+
 	const isUser = $derived(message.role === 'user');
 	const isEditing = $derived(chatStore.editingMessage?.id === message.id);
 	const repliedMessage = $derived(
@@ -509,7 +525,9 @@
 <MessageActionsSheet
 	bind:open={showActionsSheet}
 	showEdit={isUser}
+	showDownload={!!message.images?.length}
 	seed={message.role === 'assistant' ? message.seed : undefined}
+	onDownload={downloadMessageImage}
 	width={message.role === 'assistant' ? message.width : undefined}
 	height={message.role === 'assistant' ? message.height : undefined}
 	onReply={() => chatStore.setReplyTo(message)}

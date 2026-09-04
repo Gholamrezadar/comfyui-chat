@@ -76,7 +76,7 @@
 
 	function getConversationImages(): LightboxItem[] {
 		return (chatStore.activeConversation?.messages ?? []).flatMap((message) =>
-			(message.images ?? []).map((src) => ({ src, caption: getImageCaption(message) }))
+			(message.images ?? []).map((src) => ({ src, caption: getImageCaption(message), seed: message.seed, id: message.id }))
 		);
 	}
 

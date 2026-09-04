@@ -1,5 +1,7 @@
 const SELECTED_WORKFLOW_KEY = 'selectedWorkflowId';
 const GENERATION_SETTINGS_KEY = 'generationSettings';
+const CUSTOM_RESOLUTIONS_KEY = 'customResolutions';
+const HIDDEN_RESOLUTIONS_KEY = 'hiddenResolutions';
 
 export interface GenerationSettings {
 	seed: number;
@@ -31,4 +33,20 @@ export function loadGenerationSettings(): Partial<GenerationSettings> {
 
 export function saveGenerationSettings(settings: GenerationSettings): void {
 	localStorage.setItem(GENERATION_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+export function loadCustomResolutions(): string[] {
+	try { return JSON.parse(localStorage.getItem(CUSTOM_RESOLUTIONS_KEY) ?? '[]') as string[]; } catch { return []; }
+}
+
+export function saveCustomResolutions(resolutions: string[]): void {
+	localStorage.setItem(CUSTOM_RESOLUTIONS_KEY, JSON.stringify(resolutions));
+}
+
+export function loadHiddenResolutions(): string[] {
+	try { return JSON.parse(localStorage.getItem(HIDDEN_RESOLUTIONS_KEY) ?? '[]') as string[]; } catch { return []; }
+}
+
+export function saveHiddenResolutions(resolutions: string[]): void {
+	localStorage.setItem(HIDDEN_RESOLUTIONS_KEY, JSON.stringify(resolutions));
 }

@@ -1,23 +1,27 @@
 <script lang="ts">
-	import { Reply, Pencil, Trash2, Dices } from 'lucide-svelte';
+	import { Reply, Pencil, Trash2, Dices, Download } from 'lucide-svelte';
 	import { Monitor } from 'lucide-svelte';
 
 	let {
 		open = $bindable(false),
 		showEdit = false,
+		showDownload = false,
 		seed,
 		width,
 		height,
 		onReply,
+		onDownload,
 		onEdit,
 		onDelete
 	}: {
 		open: boolean;
 		showEdit?: boolean;
+		showDownload?: boolean;
 		seed?: number;
 		width?: number;
 		height?: number;
 		onReply: () => void;
+		onDownload: () => void;
 		onEdit: () => void;
 		onDelete: () => void;
 	} = $props();
@@ -66,6 +70,12 @@
 					<Reply class="h-4 w-4 shrink-0 text-muted-foreground" />
 					Reply
 				</button>
+				{#if showDownload}
+					<button type="button" class="flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-left text-sm text-foreground transition-colors hover:bg-accent" onclick={() => { close(); onDownload(); }}>
+						<Download class="h-4 w-4 shrink-0 text-muted-foreground" />
+						Download
+					</button>
+				{/if}
 				{#if showEdit}
 					<button
 						type="button"
