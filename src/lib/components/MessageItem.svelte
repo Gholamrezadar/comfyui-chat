@@ -5,6 +5,7 @@
 	import { tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import MessageActionsSheet from '$lib/components/MessageActionsSheet.svelte';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 
 	let {
@@ -24,6 +25,7 @@
 	let editContent = $state('');
 	let editTextareaEl: HTMLTextAreaElement | undefined = $state();
 	let showDeleteConfirm = $state(false);
+	let showActionsSheet = $state(false);
 	let messageRowEl: HTMLDivElement | undefined = $state();
 	let editWidth = $state('');
 
@@ -204,15 +206,43 @@
 				</button>
 			</div>
 		{:else}
-			<!-- Message Bubble -->
+			<!-- Message Bubble (user bubbles open the action sheet on tap) -->
 			<div
 				data-message-bubble
-				class={`rounded-xl transition-colors duration-300 ${
+				role={isUser ? 'button' : undefined}
+				{...(isUser ? { tabindex: 0 } : {})}
+				aria-label={isUser ? 'Open message actions' : undefined}
+				onclick={() => {
+					// Left-click/tap opens the sheet on touch devices only, so
+					// desktop users can select bubble text with the mouse.
+					if (
+						isUser &&
+						!isEditing &&
+						typeof window !== 'undefined' &&
+						window.matchMedia('(hover: none)').matches
+					) {
+						showActionsSheet = true;
+					}
+				}}
+				oncontextmenu={(event) => {
+					// Desktop: right-click opens the sheet instead.
+					if (isUser && !isEditing) {
+						event.preventDefault();
+						showActionsSheet = true;
+					}
+				}}
+				onkeydown={(event) => {
+					if (isUser && !isEditing && (event.key === 'Enter' || event.key === ' ')) {
+						event.preventDefault();
+						showActionsSheet = true;
+					}
+				}}
+				class={`rounded-xl transition-all duration-150 ${
 					isUser
-						? `overflow-hidden text-foreground/85 ${
+						? `overflow-hidden text-foreground/85 [@media(hover:none)]:cursor-pointer [@media(hover:none)]:active:scale-[0.99] [@media(hover:none)]:active:brightness-90 dark:[@media(hover:none)]:active:brightness-125 ${
 								isHighlighted && !isFading ? 'bg-black/20 dark:bg-white/30' : 'bg-chat-bubble'
 							} ${message.images?.length ? 'p-2' : 'px-4 py-1.5'}`
-						: `w-fit max-w-full px-2 py-2 ${
+						: `w-fit max-w-full px-2 py-2 transition-colors duration-300 ${
 								isHighlighted && !isFading ? 'bg-black/5 dark:bg-white/12' : 'bg-transparent'
 							}`
 				}`}
@@ -233,7 +263,11 @@
 						<div class={`${getImageGridClass(visibleImages.length)} ${isUser ? '' : 'max-w-sm'}`}>
 							{#each visibleImages as img, i (img)}
 								<button
-										onclick={() => openLightbox(img, imageCaption)}
+										onclick={(event) => {
+										event.stopPropagation();
+										openLightbox(img, imageCaption);
+									}}
+									oncontextmenu={(event) => event.stopPropagation()}
 									class="relative block cursor-pointer overflow-hidden {visibleImages.length === 1
 										? 'rounded-lg'
 										: 'first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg'}"
@@ -285,16 +319,18 @@
 						| Took {formatGenerationTime(message.generationTime)}
 					</span>
 				{/if}
-				<!-- Reply Button -->
+				<!-- Reply Button (assistant: always; user: hover-capable devices only, sheet otherwise) -->
 				<button
 					onclick={() => chatStore.setReplyTo(message)}
-					class="cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground"
+					class="cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground {isUser
+						? 'hidden [@media(hover:hover)]:block'
+						: ''}"
 					aria-label="Reply"
 					tabindex="-1"
 				>
 					<Reply class="h-3.5 w-3.5" />
 				</button>
-				
+
 				<!-- Copy Button (text messages only) -->
 				{#if message.content}
 					<button
@@ -307,22 +343,24 @@
 					</button>
 				{/if}
 
-				<!-- Edit Button -->
+				<!-- Edit Button (user on hover-capable devices only, sheet otherwise) -->
 				{#if isUser}
-				<button
+					<button
 						onclick={startEdit}
-						class="cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground"
+						class="hidden cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground [@media(hover:hover)]:block"
 						aria-label="Edit"
 						tabindex="-1"
 					>
 						<Pencil class="h-3.5 w-3.5" />
 					</button>
-					{/if}
+				{/if}
 
-					<!-- Delete Button -->
-					<button
+				<!-- Delete Button (assistant: always; user: hover-capable devices only, sheet otherwise) -->
+				<button
 					onclick={() => (showDeleteConfirm = true)}
-					class="cursor-pointer rounded p-1 text-muted-foreground hover:text-destructive"
+					class="cursor-pointer rounded p-1 text-muted-foreground hover:text-destructive {isUser
+						? 'hidden [@media(hover:hover)]:block'
+						: ''}"
 					aria-label="Delete"
 					tabindex="-1"
 				>
@@ -339,4 +377,11 @@
 	title="Delete Message"
 	message="Are you sure you want to delete this message? This action cannot be undone."
 	onconfirm={() => chatStore.deleteMessage(message.id)}
+/>
+
+<MessageActionsSheet
+	bind:open={showActionsSheet}
+	onReply={() => chatStore.setReplyTo(message)}
+	onEdit={startEdit}
+	onDelete={() => (showDeleteConfirm = true)}
 />
