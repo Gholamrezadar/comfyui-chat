@@ -5,7 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
-	import { ImagePlus, LoaderCircle, ArrowUp, Box, Reply, X, ChevronUp, SlidersHorizontal, Square } from 'lucide-svelte';
+	import { ImagePlus, LoaderCircle, ArrowUp, Box, Reply, X, ChevronUp, SlidersHorizontal, Square, Eraser } from 'lucide-svelte';
 	import SettingsModal from '$lib/components/Settings.svelte';
 	import * as settingsService from '$lib/services/settings.service';
 	import { tick } from 'svelte';
@@ -102,6 +102,17 @@
 			lastReplyTargetId = null;
 		}
 	});
+
+	function clearComposer() {
+		inputValue = '';
+		pendingImages = [];
+		if (textareaEl) textareaEl.style.height = 'auto';
+		// If focus already moved (some mobile browsers blur on tap before
+		// click), hand it back so the keyboard stays open.
+		if (typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches) {
+			textareaEl?.focus();
+		}
+	}
 
 	function handleSend() {
 		const trimmed = inputValue.trim();
@@ -339,6 +350,24 @@
 				<ImagePlus class="h-4 w-4" />
 			</Button>
 
+			<!-- Clear Button -->
+				<Tooltip>
+					<TooltipTrigger>
+						<Button
+							variant="ghost"
+							size="icon"
+							onclick={clearComposer}
+							onmousedown={(event) => event.preventDefault()}
+							disabled={!inputValue && pendingImages.length === 0}
+							class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
+							tabindex={9}
+						>
+							<Eraser class="h-4 w-4" />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent>Clear input</TooltipContent>
+				</Tooltip>
+
 			<!-- Settings Button -->
 				<Tooltip>
 					<TooltipTrigger>
@@ -347,7 +376,7 @@
 							size="icon"
 							onclick={openSettingsWithWorkflow}
 							class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
-							tabindex={9}
+							tabindex={10}
 						>
 							<SlidersHorizontal class="h-4 w-4" />
 						</Button>
@@ -366,7 +395,7 @@
 					onblur={() => setTimeout(() => (showWorkflowDropdown = false), 150)}
 					onkeydown={handleWorkflowDropdownKeydown}
 			class="flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
-				tabindex={10}
+				tabindex={11}
 			>
 				<Box class="h-3.5 w-3.5 shrink-0" />
 				<span class="max-w-[8rem] truncate">{selectedWorkflow?.name || 'No Workflow'}</span>
@@ -414,7 +443,7 @@
 					size="icon"
 					onclick={() => comfyStore.cancel()}
 					class="h-8 w-8 rounded-full cursor-pointer bg-destructive text-destructive-foreground hover:bg-destructive/80"
-					tabindex={11}
+					tabindex={12}
 				>
 					<Square class="h-4 w-4" />
 				</Button>
@@ -424,7 +453,7 @@
 					onclick={handleSend}
 					disabled={!canSend}
 					class="h-8 w-8 rounded-full cursor-pointer"
-					tabindex={11}
+					tabindex={12}
 				>
 					{#if chatStore.isResponding}
 						<LoaderCircle class="h-4 w-4 animate-spin cursor-wait" />
