@@ -80,11 +80,22 @@
 		);
 	}
 
-	function openLightbox(src: string, caption: string) {
-		const images = getConversationImages();
-		const index = images.findIndex((image) => image.src === src && image.caption === caption);
-		lightboxImages = images.length ? images : [{ src, caption }];
-		lightboxIndex = index >= 0 ? index : 0;
+	function openLightbox(messageId: string, imageIndex: number) {
+		// Resolve positionally: duplicate (src, caption) pairs exist (same image
+		// re-sent, identical captions), and findIndex would always land on the first.
+		const messages = chatStore.activeConversation?.messages ?? [];
+		lightboxImages = getConversationImages();
+		let global = 0;
+		let found = -1;
+		for (const m of messages) {
+			const count = m.images?.length ?? 0;
+			if (m.id === messageId) {
+				if (imageIndex < count) found = global + imageIndex;
+				break;
+			}
+			global += count;
+		}
+		lightboxIndex = found >= 0 ? found : 0;
 	}
 
 	function closeLightbox() {

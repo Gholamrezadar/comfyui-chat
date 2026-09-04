@@ -19,7 +19,7 @@
 		isHighlighted?: boolean;
 		isFading?: boolean;
 		scrollToMessage: (id: string) => void;
-		openLightbox: (src: string, caption: string) => void;
+		openLightbox: (messageId: string, imageIndex: number) => void;
 	} = $props();
 
 	let editContent = $state('');
@@ -40,9 +40,6 @@
 	const replyImages = $derived(repliedMessage?.images?.slice(0, 4) ?? []);
 	const visibleImages = $derived(message.images?.slice(0, 4) ?? []);
 	const hiddenImageCount = $derived(Math.max((message.images?.length ?? 0) - 4, 0));
-	const imageCaption = $derived(
-		(message.replyToId ? (message.replyToContent || repliedMessage?.content) : message.content) ?? ''
-	);
 
 	function formatTimestamp(ts: number): string {
 		return new Date(ts).toLocaleTimeString(undefined, {
@@ -148,7 +145,7 @@
 				<!-- Reply Images -->
 				{#if replyImages.length}
 					<div class="flex items-center gap-1.5">
-						{#each replyImages as img (img)}
+						{#each replyImages as img, i (i)}
 							<img src={img} alt="" class="h-10 w-8 shrink-0 rounded-md object-cover" />
 						{/each}
 					</div>
@@ -261,12 +258,12 @@
 					<!-- Message Images -->
 					{#if visibleImages.length}
 						<div class={`${getImageGridClass(visibleImages.length)} ${isUser ? '' : 'max-w-sm'}`}>
-							{#each visibleImages as img, i (img)}
-								<button
-										onclick={(event) => {
-										event.stopPropagation();
-										openLightbox(img, imageCaption);
-									}}
+						{#each visibleImages as img, i (i)}
+							<button
+									onclick={(event) => {
+									event.stopPropagation();
+									openLightbox(message.id, i);
+								}}
 									oncontextmenu={(event) => event.stopPropagation()}
 									class="relative block cursor-pointer overflow-hidden {visibleImages.length === 1
 										? 'rounded-lg'
