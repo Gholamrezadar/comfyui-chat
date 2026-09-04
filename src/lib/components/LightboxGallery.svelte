@@ -138,6 +138,16 @@
 	let suppressDotClick = false;
 	const DOT_SCRUB_STEP_PX = 16;
 
+	function tickHaptic() {
+		try {
+			if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+				navigator.vibrate(10);
+			}
+		} catch {
+			// Haptics are best-effort; ignore unsupported environments.
+		}
+	}
+
 	function handleDotsPointerDown(event: PointerEvent) {
 		if (!event.isPrimary) return;
 		scrubbingDots = true;
@@ -157,7 +167,14 @@
 		const dx = event.clientX - scrubStartX;
 		if (Math.abs(dx) > 6) scrubMoved = true;
 		if (!scrubMoved) return;
-		goToLightbox(Math.round(scrubStartIndex + dx / DOT_SCRUB_STEP_PX));
+		const target = Math.min(
+			images.length - 1,
+			Math.max(0, Math.round(scrubStartIndex + dx / DOT_SCRUB_STEP_PX))
+		);
+		if (target !== index) {
+			tickHaptic();
+			goToLightbox(target);
+		}
 	}
 
 	function endDotsScrub(event: PointerEvent) {
