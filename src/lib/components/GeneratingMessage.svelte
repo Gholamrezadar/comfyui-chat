@@ -11,7 +11,7 @@
 </script>
 
 <!-- Generating Message Row (matches MessageItem assistant layout) -->
-<div class="flex items-start gap-3">
+<div class="-mt-3 flex items-start gap-3">
 	<!-- Message Stack -->
 	<div class="flex min-w-0 flex-col gap-1">
 		<!-- Message Bubble wrapper (matches MessageItem assistant style) -->

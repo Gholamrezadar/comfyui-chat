@@ -121,7 +121,7 @@
 <!-- Sidebar Container -->
 <svelte:window onkeydown={handleKeydown} />
 <aside
-	class="top-0 left-0 z-50 flex h-full flex-col border-r border-border bg-sidebar transition-all duration-0 ease-in-out md:relative md:h-full"
+	class="relative top-0 left-0 z-50 flex h-full flex-col border-r border-border bg-sidebar transition-all duration-0 ease-in-out md:relative md:h-full"
 	class:w-full={!collapsed}
 	class:w-14={collapsed}
 	class:md:w-64={!collapsed}
@@ -288,7 +288,7 @@
 								<!-- Conversation Delete Button -->
 								<button
 									onclick={(e) => handleDeleteConvo(e, convo.id)}
-									class="invisible shrink-0 rounded p-0.5 group-hover:visible hover:text-destructive cursor-pointer"
+									class="shrink-0 rounded p-0.5 hover:text-destructive cursor-pointer md:invisible md:group-hover:visible"
 									aria-label="Delete conversation"
 									tabindex={-1}
 								>

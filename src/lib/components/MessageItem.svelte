@@ -119,7 +119,7 @@
 <!-- Message Row -->
 <div
 	bind:this={messageRowEl}
-	class={isUser ? 'group/msg flex items-end justify-end' : 'group/msg flex items-start gap-3'}
+	class={isUser ? 'group/msg flex items-end justify-end' : 'group/msg -mt-3 flex items-start gap-3'}
 	data-message-id={message.id}
 >
 	<!-- Message Stack -->
@@ -272,7 +272,7 @@
 
 		<!-- Reply/Edit/Delete Container -->
 		{#if !isEditing}
-			<div class="flex items-center gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
+			<div class="flex items-center gap-1 transition-opacity md:opacity-0 md:group-hover/msg:opacity-100">
 				<!-- Timestamp -->
 				<span class="ml-2 text-[10px] text-muted-foreground">
 					{formatTimestamp(message.timestamp)}

@@ -261,7 +261,7 @@
 					<img src={img} alt="Upload preview" class="h-full w-full object-cover" />
 					<button
 						onclick={() => removePendingImage(i)}
-						class="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-muted text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+						class="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-muted text-destructive-foreground transition-opacity cursor-pointer md:opacity-0 md:group-hover:opacity-100"
 					>
 						<X class="h-2.5 w-2.5" />
 					</button>
@@ -410,7 +410,7 @@
 </div>
 
 <!-- Composer Hint -->
-<p class="mt-1.5 text-center text-[10px] text-muted-foreground">
+<p class="mt-1.5 text-center text-[10px] text-muted-foreground hidden md:block">
 	Enter to send · Shift+Enter for newline · Paste or drag images
 </p>
 

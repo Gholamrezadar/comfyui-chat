@@ -25,7 +25,7 @@
 
 {#if loaded}
 	<!-- App Shell -->
-	<div class="relative flex h-screen w-screen overflow-hidden bg-background text-foreground antialiased">
+	<div class="relative flex h-[100dvh] w-screen overflow-hidden bg-background text-foreground antialiased">
 		<!-- Sidebar -->
 		<Sidebar bind:collapsed={sidebarCollapsed} />
 

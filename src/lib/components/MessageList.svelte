@@ -117,6 +117,24 @@
 			navigateLightbox(1);
 		}
 	}
+
+	const SWIPE_THRESHOLD_PX = 50;
+	let touchStartX = 0;
+	let touchStartY = 0;
+
+	function handleLightboxTouchStart(event: TouchEvent) {
+		touchStartX = event.touches[0].clientX;
+		touchStartY = event.touches[0].clientY;
+	}
+
+	function handleLightboxTouchEnd(event: TouchEvent) {
+		const dx = event.changedTouches[0].clientX - touchStartX;
+		const dy = event.changedTouches[0].clientY - touchStartY;
+		if (Math.abs(dx) >= SWIPE_THRESHOLD_PX && Math.abs(dx) > Math.abs(dy)) {
+			event.preventDefault();
+			navigateLightbox(dx < 0 ? 1 : -1);
+		}
+	}
 </script>
 
 <svelte:window onkeydown={handleLightboxKeydown} />
@@ -124,9 +142,11 @@
 <!-- Image Lightbox -->
 {#if lightboxItem}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm cursor-pointer"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm cursor-pointer touch-pan-y"
 		onclick={(event) => event.target === event.currentTarget && closeLightbox()}
 		onkeydown={(event) => event.key === 'Escape' && closeLightbox()}
+		ontouchstart={handleLightboxTouchStart}
+		ontouchend={handleLightboxTouchEnd}
 		role="dialog"
 		tabindex="0"
 		aria-label="Close image preview"
@@ -147,25 +167,25 @@
 		</div>
 		<button
 			type="button"
-			class="absolute left-3 top-1/2 cursor-pointer rounded-full p-1 text-foreground/70 transition-colors hover:bg-foreground/10 hover:text-foreground"
+			class="absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full p-2 text-foreground/70 transition-colors hover:bg-foreground/10 hover:text-foreground"
 			onclick={(event) => {
 				event.stopPropagation();
 				navigateLightbox(-1);
 			}}
 			aria-label="Previous image"
 		>
-			<ChevronLeft class="h-4 w-4" />
+			<ChevronLeft class="h-5 w-5" />
 		</button>
 		<button
 			type="button"
-			class="absolute right-3 top-1/2 cursor-pointer rounded-full p-1 text-foreground/70 transition-colors hover:bg-foreground/10 hover:text-foreground"
+			class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full p-2 text-foreground/70 transition-colors hover:bg-foreground/10 hover:text-foreground"
 			onclick={(event) => {
 				event.stopPropagation();
 				navigateLightbox(1);
 			}}
 			aria-label="Next image"
 		>
-			<ChevronRight class="h-4 w-4" />
+			<ChevronRight class="h-5 w-5" />
 		</button>
 	</div>
 {/if}
