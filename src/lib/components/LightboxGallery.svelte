@@ -126,6 +126,53 @@
 		}
 		isHorizontalSwipe = null;
 	}
+
+	// Draggable dots: horizontal drag across the strip scrubs through images.
+	// A tap (no drag) falls through to the dot button's own click handler.
+	let dotsEl: HTMLDivElement | undefined = $state();
+	let scrubbingDots = false;
+	let scrubPointerId: number | null = null;
+	let scrubStartX = 0;
+	let scrubStartIndex = 0;
+	let scrubMoved = false;
+	let suppressDotClick = false;
+	const DOT_SCRUB_STEP_PX = 16;
+
+	function handleDotsPointerDown(event: PointerEvent) {
+		if (!event.isPrimary) return;
+		scrubbingDots = true;
+		scrubMoved = false;
+		scrubPointerId = event.pointerId;
+		scrubStartX = event.clientX;
+		scrubStartIndex = index;
+		try {
+			dotsEl?.setPointerCapture(event.pointerId);
+		} catch {
+			// Best-effort; scrubbing still works without capture.
+		}
+	}
+
+	function handleDotsPointerMove(event: PointerEvent) {
+		if (!scrubbingDots || event.pointerId !== scrubPointerId || !images.length) return;
+		const dx = event.clientX - scrubStartX;
+		if (Math.abs(dx) > 6) scrubMoved = true;
+		if (!scrubMoved) return;
+		goToLightbox(Math.round(scrubStartIndex + dx / DOT_SCRUB_STEP_PX));
+	}
+
+	function endDotsScrub(event: PointerEvent) {
+		if (!scrubbingDots || event.pointerId !== scrubPointerId) return;
+		scrubbingDots = false;
+		scrubPointerId = null;
+		if (scrubMoved) {
+			// Swallow the click the browser fires after a drag so the release
+			// position isn't overridden by the dot under the finger.
+			suppressDotClick = true;
+			window.setTimeout(() => {
+				suppressDotClick = false;
+			}, 100);
+		}
+	}
 </script>
 
 <svelte:window onkeydown={handleLightboxKeydown} />
@@ -219,13 +266,18 @@
 			{/if}
 		</div>
 
-		<!-- Position dots: active is a white pill, rest are small circles -->
+		<!-- Position dots: active is a white pill, rest are small circles; drag across to scrub -->
 		{#if images.length > 1}
 			<div
-				class="flex items-center justify-center gap-1.5"
+				bind:this={dotsEl}
+				class="flex touch-none items-center justify-center gap-1.5 select-none"
 				role="group"
-				aria-label="Image position"
+				aria-label="Image position. Drag to scrub through images."
 				data-gallery-content
+				onpointerdown={handleDotsPointerDown}
+				onpointermove={handleDotsPointerMove}
+				onpointerup={(event) => endDotsScrub(event)}
+				onpointercancel={(event) => endDotsScrub(event)}
 			>
 				{#each visibleDotIndices as i (i)}
 					<button
@@ -234,6 +286,7 @@
 						aria-label="Go to image {i + 1} of {images.length}"
 						onclick={(event) => {
 							event.stopPropagation();
+							if (suppressDotClick) return;
 							goToLightbox(i);
 						}}
 						class="h-1.5 rounded-full transition-all duration-300 {i === index
