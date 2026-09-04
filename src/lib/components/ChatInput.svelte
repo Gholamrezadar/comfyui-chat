@@ -26,6 +26,11 @@
 	let width = $state(1024);
 	let height = $state(1024);
 	let highlightedWorkflowIndex = $state(-1);
+	const savedGenerationSettings = settingsService.loadGenerationSettings();
+	seed = savedGenerationSettings.seed ?? seed;
+	randomizeSeedEachTime = savedGenerationSettings.randomizeEachTime ?? randomizeSeedEachTime;
+	width = savedGenerationSettings.width ?? width;
+	height = savedGenerationSettings.height ?? height;
 
 	let selectedWorkflow = $state<Workflow | null>(null);
 
@@ -39,6 +44,10 @@
 	// Persist selected workflow ID whenever it changes
 	$effect(() => {
 		settingsService.saveSelectedWorkflowId(selectedWorkflow?.id ?? null);
+	});
+
+	$effect(() => {
+		settingsService.saveGenerationSettings({ seed, width, height, randomizeEachTime: randomizeSeedEachTime });
 	});
 
 	// Open settings and pre-select the current workflow for editing

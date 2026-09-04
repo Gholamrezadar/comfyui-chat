@@ -509,6 +509,9 @@
 <MessageActionsSheet
 	bind:open={showActionsSheet}
 	showEdit={isUser}
+	seed={message.role === 'assistant' ? message.seed : undefined}
+	width={message.role === 'assistant' ? message.width : undefined}
+	height={message.role === 'assistant' ? message.height : undefined}
 	onReply={() => chatStore.setReplyTo(message)}
 	onEdit={startEdit}
 	onDelete={() => (showDeleteConfirm = true)}

@@ -1,15 +1,22 @@
 <script lang="ts">
-	import { Reply, Pencil, Trash2 } from 'lucide-svelte';
+	import { Reply, Pencil, Trash2, Dices } from 'lucide-svelte';
+	import { Monitor } from 'lucide-svelte';
 
 	let {
 		open = $bindable(false),
 		showEdit = false,
+		seed,
+		width,
+		height,
 		onReply,
 		onEdit,
 		onDelete
 	}: {
 		open: boolean;
 		showEdit?: boolean;
+		seed?: number;
+		width?: number;
+		height?: number;
 		onReply: () => void;
 		onEdit: () => void;
 		onDelete: () => void;
@@ -83,6 +90,24 @@
 					<Trash2 class="h-4 w-4 shrink-0" />
 					Delete
 				</button>
+				{#if seed !== undefined || (width !== undefined && height !== undefined)}
+					<div class="mt-1 flex flex-col gap-2 border-t border-border px-4 pt-3 text-sm text-muted-foreground">
+						{#if seed !== undefined}
+							<div class="flex items-center gap-1">
+								<Dices class="h-4 w-4 shrink-0" />
+								<span>Seed</span>
+								<span class="ml-2 font-mono text-foreground">{seed}</span>
+							</div>
+						{/if}
+						{#if width !== undefined && height !== undefined}
+							<div class="flex items-center gap-1">
+								<Monitor class="h-4 w-4 shrink-0" />
+								<span>Resolution</span>
+								<span class="ml-2 font-mono text-foreground">{width} x {height}</span>
+							</div>
+						{/if}
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>

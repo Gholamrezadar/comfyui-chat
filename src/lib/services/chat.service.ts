@@ -12,6 +12,9 @@ export interface Message {
 	replyToContent?: string;
 	images?: string[];
 	generationTime?: number;
+	seed?: number;
+	width?: number;
+	height?: number;
 	cancelled?: boolean;
 }
 
@@ -104,6 +107,7 @@ export function addUserMessage(
 	replyToId?: string,
 	replyToContent?: string,
 	images?: string[]
+	, seed?: number
 ): Conversation {
 	const message: Message = {
 		id: uid(),
@@ -111,7 +115,8 @@ export function addUserMessage(
 		content,
 		timestamp: Date.now(),
 		...(replyToId ? { replyToId, replyToContent: replyToContent ?? '' } : {}),
-		...(images && images.length > 0 ? { images } : {})
+				...(images && images.length > 0 ? { images } : {})
+				, ...(seed !== undefined ? { seed } : {})
 	};
 
 	// Derive a title from the first user message

@@ -143,6 +143,13 @@ function createChatStore() {
 		generationOptions?: { seed: number; width: number; height: number }
 	) {
 		try {
+			// Resolve defaults once so the value sent to ComfyUI and the value
+			// persisted on the assistant message are always identical.
+			const resolvedGenerationOptions = generationOptions ?? {
+				seed: 3,
+				width: 1024,
+				height: 1024
+			};
 			// Validate image overrides against provided images
 			const imageError = validateImageOverrides(workflow.overrides ?? [], images ?? []);
 			if (imageError) {
@@ -162,7 +169,7 @@ function createChatStore() {
 				workflow.overrides ?? [],
 				userPrompt,
 				uploadedNames,
-				generationOptions
+				resolvedGenerationOptions
 			);
 
 			const result = await comfyStore.generate(workflow.base_url, merged);
@@ -179,7 +186,10 @@ function createChatStore() {
 				replyToId,
 				replyToContent: userPrompt,
 				images: result.imageUrls.length > 0 ? result.imageUrls : undefined,
-				generationTime: generationTime > 0 ? generationTime : undefined
+				generationTime: generationTime > 0 ? generationTime : undefined,
+				seed: resolvedGenerationOptions.seed,
+				width: resolvedGenerationOptions.width,
+				height: resolvedGenerationOptions.height
 			};
 
 			const updated: Conversation = {
