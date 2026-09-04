@@ -141,7 +141,7 @@
 	function tickHaptic() {
 		try {
 			if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-				navigator.vibrate(10);
+				navigator.vibrate(30);
 			}
 		} catch {
 			// Haptics are best-effort; ignore unsupported environments.
@@ -188,7 +188,22 @@
 			window.setTimeout(() => {
 				suppressDotClick = false;
 			}, 100);
+			return;
 		}
+		// Plain tap anywhere on the strip (dot or padding) jumps to the
+		// nearest dot, so near-misses never fall through and close the viewer.
+		goToNearestDot(event.clientX);
+	}
+
+	function goToNearestDot(clientX: number) {
+		const rect = dotsEl?.getBoundingClientRect();
+		if (!rect || !visibleDotIndices.length) return;
+		const ratio = (clientX - rect.left) / Math.max(1, rect.width);
+		const slot = Math.min(
+			visibleDotIndices.length - 1,
+			Math.max(0, Math.round(ratio * (visibleDotIndices.length - 1)))
+		);
+		goToLightbox(visibleDotIndices[slot]);
 	}
 </script>
 
@@ -283,13 +298,15 @@
 			{/if}
 		</div>
 
-		<!-- Position dots: active is a white pill, rest are small circles; drag across to scrub -->
+		<!-- Position dots: active is a white pill, rest are small circles; drag across to scrub.
+			The padded strip is a forgiving tap target: taps land on the nearest
+			dot and padding clicks can't fall through to close the viewer. -->
 		{#if images.length > 1}
 			<div
 				bind:this={dotsEl}
-				class="flex touch-none items-center justify-center gap-1.5 select-none"
+				class="flex touch-none cursor-pointer items-center justify-center gap-1.5 px-6 py-4 select-none"
 				role="group"
-				aria-label="Image position. Drag to scrub through images."
+				aria-label="Image position. Tap or drag to change images."
 				data-gallery-content
 				onpointerdown={handleDotsPointerDown}
 				onpointermove={handleDotsPointerMove}
@@ -306,7 +323,7 @@
 							if (suppressDotClick) return;
 							goToLightbox(i);
 						}}
-						class="h-1.5 rounded-full transition-all duration-300 {i === index
+						class="h-1.5 cursor-pointer rounded-full transition-all duration-300 {i === index
 							? 'w-6 bg-white'
 							: 'w-1.5 bg-white/40 hover:bg-white/70'}"
 					></button>
