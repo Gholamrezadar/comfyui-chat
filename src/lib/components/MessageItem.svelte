@@ -393,7 +393,11 @@
 									event.stopPropagation();
 									openLightbox(message.id, i);
 								}}
-									oncontextmenu={(event) => event.stopPropagation()}
+									oncontextmenu={(event) => {
+										event.preventDefault();
+										event.stopPropagation();
+										openActionsSheet();
+									}}
 									class="relative block cursor-pointer overflow-hidden {visibleImages.length === 1
 										? 'rounded-lg'
 										: 'first:rounded-tl-lg first:rounded-bl-lg last:rounded-tr-lg last:rounded-br-lg'}"
