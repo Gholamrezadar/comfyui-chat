@@ -342,7 +342,7 @@
 		{#if images.length > 1}
 			<div
 				bind:this={dotsEl}
-				class="flex touch-none cursor-pointer items-center justify-center gap-1.5 px-6 py-4 select-none"
+				class="flex w-[78px] touch-none cursor-pointer items-center justify-center gap-1.5 overflow-hidden px-0 py-4 select-none"
 				role="group"
 				aria-label="Image position. Tap or drag to change images."
 				data-gallery-content
@@ -351,6 +351,7 @@
 				onpointerup={(event) => endDotsScrub(event)}
 				onpointercancel={(event) => endDotsScrub(event)}
 			>
+				<div class="flex shrink-0 items-center gap-1.5 transition-transform duration-300" style={`transform: translateX(calc(50% - ${index * 12 + 3}px));`}>
 				{#each allDotIndices as i (i)}
 					<button
 						type="button"
@@ -361,12 +362,10 @@
 							if (suppressDotClick) return;
 							goToLightbox(i);
 						}}
-						class:hidden={!visibleDotIndices.includes(i)}
-						class="h-1.5 cursor-pointer rounded-full transition-all duration-300 {i === index
-							? 'w-6 bg-foreground dark:bg-white'
-							: 'w-1.5 bg-foreground/60 hover:bg-foreground/80 dark:bg-white/40 dark:hover:bg-white/70'}"
+						class="h-1.5 cursor-pointer rounded-full transition-all duration-300 {i === index ? 'w-6 bg-foreground dark:bg-white' : 'w-1.5 bg-foreground/60 hover:bg-foreground/80 dark:bg-white/40 dark:hover:bg-white/70'}"
 					></button>
 				{/each}
+				</div>
 			</div>
 		{/if}
 	</div>
