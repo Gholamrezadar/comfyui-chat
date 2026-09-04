@@ -55,11 +55,39 @@
 	function focusComposer() {
 		tick().then(() => {
 			requestAnimationFrame(() => {
-				textareaEl?.focus({ preventScroll: true });
+				const isTouch = window.matchMedia('(hover: none)').matches;
+				if (isTouch) {
+					// Let the browser scroll and scroll the composer into view:
+					// the keyboard opens asynchronously and would otherwise
+					// cover the composer (tapping the input directly works
+					// because the browser handles this natively).
+					textareaEl?.focus();
+					textareaEl?.scrollIntoView({ block: 'nearest' });
+				} else {
+					textareaEl?.focus({ preventScroll: true });
+				}
 				autoResize();
 			});
 		});
 	}
+
+	// When the mobile keyboard opens it shrinks the visual viewport after
+	// focus already happened — re-assert the composer into view then.
+	$effect(() => {
+		const viewport = window.visualViewport;
+		if (!viewport) return;
+		let lastHeight = viewport.height;
+		const onResize = () => {
+			const current = viewport.height;
+			const keyboardOpened = current < lastHeight - 100;
+			lastHeight = current;
+			if (keyboardOpened && document.activeElement === textareaEl) {
+				textareaEl?.scrollIntoView({ block: 'nearest' });
+			}
+		};
+		viewport.addEventListener('resize', onResize);
+		return () => viewport.removeEventListener('resize', onResize);
+	});
 
 	$effect(() => {
 		const replyId = chatStore.replyToMessage?.id ?? null;
