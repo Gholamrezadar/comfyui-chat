@@ -11,10 +11,34 @@
 	const hasMessages = $derived((chatStore.activeConversation?.messages.length ?? 0) > 0);
 
 	let showRename = $state(false);
+	let swipeStartX = 0;
+	let swipeStartY = 0;
+	let swiping = false;
+
+	function handleTouchStart(event: TouchEvent) {
+		if (window.matchMedia('(min-width: 768px)').matches) return;
+		const target = event.target as HTMLElement;
+		if (target.closest('[data-message-bubble], img, button, input, textarea, select')) return;
+		const touch = event.touches[0];
+		swipeStartX = touch.clientX;
+		swipeStartY = touch.clientY;
+		swiping = true;
+	}
+
+	function handleTouchEnd(event: TouchEvent) {
+		if (!swiping) return;
+		swiping = false;
+		const touch = event.changedTouches[0];
+		const deltaX = touch.clientX - swipeStartX;
+		if (Math.abs(deltaX) > 72 && Math.abs(touch.clientY - swipeStartY) < 60) {
+			sidebarCollapsed = deltaX < 0 ? true : false;
+			chatStore.saveSidebarState(deltaX < 0);
+		}
+	}
 </script>
 
 <!-- Chat View Layout -->
-<div class="relative flex h-full flex-col">
+<div class="relative flex h-full flex-col" ontouchstart={handleTouchStart} ontouchend={handleTouchEnd}>
 	{#if !chatStore.activeConversation || !hasMessages}
 		{#if sidebarCollapsed}
 			<!-- Mobile drawer opener (rail is off-canvas on small screens) -->

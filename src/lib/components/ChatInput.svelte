@@ -25,14 +25,26 @@
 	let randomizeSeedEachTime = $state(false);
 	let width = $state(1024);
 	let height = $state(1024);
+	let steps = $state(20);
+	let cfg = $state(7);
 	let highlightedWorkflowIndex = $state(-1);
 	const savedGenerationSettings = settingsService.loadGenerationSettings();
 	seed = savedGenerationSettings.seed ?? seed;
 	randomizeSeedEachTime = savedGenerationSettings.randomizeEachTime ?? randomizeSeedEachTime;
 	width = savedGenerationSettings.width ?? width;
 	height = savedGenerationSettings.height ?? height;
+	steps = savedGenerationSettings.steps ?? steps;
+	cfg = savedGenerationSettings.cfg ?? cfg;
 
 	let selectedWorkflow = $state<Workflow | null>(null);
+
+	// Keep the composer reference in sync when workflow settings replace the
+	// selected workflow object after saving.
+	$effect(() => {
+		if (!selectedWorkflow) return;
+		const current = workflowStore.workflows.find((workflow) => workflow.id === selectedWorkflow?.id);
+		if (current && current !== selectedWorkflow) selectedWorkflow = current;
+	});
 
 	// Restore selected workflow from persistence on mount
 	const savedWorkflowId = settingsService.loadSelectedWorkflowId();
@@ -47,7 +59,7 @@
 	});
 
 	$effect(() => {
-		settingsService.saveGenerationSettings({ seed, width, height, randomizeEachTime: randomizeSeedEachTime });
+		settingsService.saveGenerationSettings({ seed, width, height, steps, cfg, randomizeEachTime: randomizeSeedEachTime });
 	});
 
 	// Open settings and pre-select the current workflow for editing
@@ -145,7 +157,10 @@
 			return;
 
 		const sendSeed = randomizeSeedEachTime ? Math.floor(Math.random() * 2147483648) : seed;
-		chatStore.sendMessage(trimmed, hasImages ? [...pendingImages] : undefined, selectedWorkflow ?? undefined, { seed: sendSeed, width, height });
+		const currentWorkflow = selectedWorkflow
+			? workflowStore.workflows.find((workflow) => workflow.id === selectedWorkflow?.id) ?? selectedWorkflow
+			: undefined;
+		chatStore.sendMessage(trimmed, hasImages ? [...pendingImages] : undefined, currentWorkflow, { seed: sendSeed, width, height, steps, cfg });
 		inputValue = '';
 		pendingImages = [];
 		if (textareaEl) textareaEl.style.height = 'auto';
@@ -483,7 +498,7 @@
 				<Button
 					size="icon"
 					onclick={() => comfyStore.cancel()}
-					class="h-8 w-8 rounded-full cursor-pointer bg-destructive text-destructive-foreground hover:bg-destructive/80"
+				class="h-8 w-8 cursor-pointer rounded-full bg-amber-900 text-amber-50 hover:bg-amber-800 dark:bg-destructive dark:text-destructive-foreground dark:hover:bg-destructive/80"
 					tabindex={12}
 				>
 					<Square class="h-4 w-4" />
@@ -519,5 +534,8 @@
 	bind:seed
 	bind:randomizeEachTime={randomizeSeedEachTime}
 		bind:width
-		bind:height
+	bind:height
+	bind:steps
+	bind:cfg
+	
 	/>

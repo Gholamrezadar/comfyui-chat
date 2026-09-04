@@ -15,6 +15,8 @@ export interface Message {
 	seed?: number;
 	width?: number;
 	height?: number;
+	steps?: number;
+	cfg?: number;
 	cancelled?: boolean;
 }
 

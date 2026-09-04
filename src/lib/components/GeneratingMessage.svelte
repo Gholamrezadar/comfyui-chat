@@ -18,18 +18,16 @@
 		<div class="w-fit max-w-full px-2 py-2">
 			{#if comfyStore.previewUrl}
 				<!-- Preview Image -->
-				<div class="overflow-hidden rounded-xl border border-border">
+				<div class="w-[13.2rem] max-w-[calc(100vw-2rem)] flex-none overflow-hidden rounded-xl border border-border" style={`aspect-ratio: ${comfyStore.previewWidth} / ${comfyStore.previewHeight};`}>
 					<img
 						src={comfyStore.previewUrl}
 						alt="Generating preview"
-						class="block max-h-64 w-full object-contain"
+						class="block h-full w-full object-contain"
 					/>
 				</div>
 			{:else}
 				<!-- Empty loading card before first preview -->
-				<div
-					class="flex h-40 w-64 items-center justify-center rounded-xl border border-border bg-muted/30"
-				>
+				<div class="flex w-[13.2rem] max-w-[calc(100vw-2rem)] flex-none items-center justify-center rounded-xl border border-border bg-muted/30" style={`aspect-ratio: ${comfyStore.previewWidth} / ${comfyStore.previewHeight};`}>
 					<div class="flex flex-col items-center gap-2">
 						<LoaderCircle class="h-6 w-6 animate-spin text-muted-foreground" />
 						<span class="text-xs text-muted-foreground">Generating...</span>

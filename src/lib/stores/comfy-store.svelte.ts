@@ -17,6 +17,8 @@ function createComfyStore() {
 	let progressMax = $state(0);
 	let progressPct = $state(0);
 	let previewUrl = $state<string | null>(null);
+	let previewWidth = $state(1024);
+	let previewHeight = $state(1024);
 	let currentPromptId = $state<string | null>(null);
 	let error = $state<string | null>(null);
 	let startTime = $state(0);
@@ -269,6 +271,9 @@ function createComfyStore() {
 		get previewUrl(): string | null {
 			return previewUrl;
 		},
+		get previewWidth() { return previewWidth; },
+		get previewHeight() { return previewHeight; },
+		setPreviewResolution(width: number, height: number) { previewWidth = width; previewHeight = height; },
 		get currentPromptId(): string | null {
 			return currentPromptId;
 		},

@@ -32,6 +32,29 @@
 	let showShortcuts = $state(false);
 	let showDeleteConfirm = $state(false);
 	let deleteTargetId = $state('');
+	let swipeStartX = 0;
+	let swipeStartY = 0;
+	let swiping = false;
+
+	function handleSidebarTouchStart(event: TouchEvent) {
+		if (window.matchMedia('(min-width: 768px)').matches) return;
+		const target = event.target as HTMLElement;
+		if (target.closest('button, input, textarea, select, img')) return;
+		const touch = event.touches[0];
+		swipeStartX = touch.clientX;
+		swipeStartY = touch.clientY;
+		swiping = true;
+	}
+
+	function handleSidebarTouchEnd(event: TouchEvent) {
+		if (!swiping) return;
+		swiping = false;
+		const touch = event.changedTouches[0];
+		if (swipeStartX - touch.clientX > 72 && Math.abs(touch.clientY - swipeStartY) < 60) {
+			collapsed = true;
+			chatStore.saveSidebarState(false);
+		}
+	}
 
 	// Sync search query with the store
 	$effect(() => {
@@ -147,11 +170,13 @@
 	></button>
 {/if}
 <aside
-	class="top-0 left-0 z-50 flex h-full w-72 max-w-[85vw] shrink-0 flex-col overflow-hidden border-r border-border bg-sidebar transition-[width,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] max-md:fixed max-md:inset-y-0 max-md:shadow-2xl md:relative"
+	class="top-0 left-0 z-50 flex h-full w-72 max-w-[85vw] shrink-0 flex-col overflow-hidden border-r border-border bg-sidebar transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] max-md:fixed max-md:inset-y-0 max-md:shadow-2xl md:relative md:transition-[width]"
 	class:max-md:-translate-x-full={collapsed}
 	class:max-md:translate-x-0={!collapsed}
 	class:md:w-64={!collapsed}
 	class:md:w-14={collapsed}
+	ontouchstart={handleSidebarTouchStart}
+	ontouchend={handleSidebarTouchEnd}
 >
 	<!-- Sidebar Toggle Button -->
 	<div class="absolute top-2.75 right-3 z-20">
@@ -348,7 +373,7 @@
 						variant="ghost"
 						size="icon"
 						onclick={() => themeStore.toggle()}
-						class="h-9 w-9 cursor-pointer md:hidden"
+						class="h-9 w-9 cursor-pointer"
 						aria-label="Toggle theme"
 					>
 						{#if themeStore.isDark}
@@ -377,13 +402,13 @@
 			</Tooltip>
 			</div>
 		{:else}
-			<!-- Expanded: Theme Toggle (mobile only) + Settings -->
-			<div class="sidebar-content-in flex items-center justify-between px-2 py-1.5">
+			<!-- Expanded: Theme Toggle above Settings -->
+			<div class="sidebar-content-in flex flex-col items-start gap-2 px-2 py-1.5">
 				<Button
 					variant="ghost"
 					size="icon"
 					onclick={() => themeStore.toggle()}
-					class="h-9 w-9 shrink-0 cursor-pointer md:hidden"
+					class="h-9 w-9 shrink-0 cursor-pointer"
 					aria-label="Toggle theme"
 				>
 					{#if themeStore.isDark}

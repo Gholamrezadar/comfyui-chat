@@ -7,6 +7,8 @@ export interface GenerationSettings {
 	seed: number;
 	width: number;
 	height: number;
+	steps: number;
+	cfg: number;
 	randomizeEachTime: boolean;
 }
 

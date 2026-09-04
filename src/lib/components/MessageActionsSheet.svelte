@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Reply, Pencil, Trash2, Dices, Download } from 'lucide-svelte';
-	import { Monitor } from 'lucide-svelte';
+	import { Monitor, ListOrdered, SlidersHorizontal } from 'lucide-svelte';
 
 	let {
 		open = $bindable(false),
@@ -9,6 +9,8 @@
 		seed,
 		width,
 		height,
+		steps,
+		cfg,
 		onReply,
 		onDownload,
 		onEdit,
@@ -20,6 +22,8 @@
 		seed?: number;
 		width?: number;
 		height?: number;
+		steps?: number;
+		cfg?: number;
 		onReply: () => void;
 		onDownload: () => void;
 		onEdit: () => void;
@@ -115,6 +119,12 @@
 								<span>Resolution</span>
 								<span class="ml-2 font-mono text-foreground">{width} x {height}</span>
 							</div>
+						{/if}
+						{#if steps !== undefined}
+							<div class="flex items-center gap-1"><ListOrdered class="h-4 w-4 shrink-0" /><span>Steps</span><span class="ml-2 font-mono text-foreground">{steps}</span></div>
+						{/if}
+						{#if cfg !== undefined}
+							<div class="flex items-center gap-1"><SlidersHorizontal class="h-4 w-4 shrink-0" /><span>CFG</span><span class="ml-2 font-mono text-foreground">{cfg}</span></div>
 						{/if}
 					</div>
 				{/if}

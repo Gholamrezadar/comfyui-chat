@@ -1,6 +1,6 @@
 import type { WorkflowOverride } from './workflow.service';
 
-export const PRESET_VALUES = ['PROMPT', 'IMAGE1', 'IMAGE2', 'IMAGE3', 'IMAGE4', 'SEED', 'WIDTH', 'HEIGHT'];
+export const PRESET_VALUES = ['PROMPT', 'IMAGE1', 'IMAGE2', 'IMAGE3', 'IMAGE4', 'SEED', 'WIDTH', 'HEIGHT', 'STEPS', 'CFG'];
 const IMAGE_PRESETS = ['IMAGE1', 'IMAGE2', 'IMAGE3', 'IMAGE4'] as const;
 
 function base64ToBlob(base64: string, mimeType: string): Blob {
@@ -126,10 +126,12 @@ export function mergeWorkflow(
 	overrides: WorkflowOverride[],
 	promptText: string,
 	uploadedImageNames?: string[],
-	generationOptions: { seed: number; width: number; height: number } = {
+	generationOptions: { seed: number; width: number; height: number; steps: number; cfg: number } = {
 		seed: 3,
 		width: 1024,
-		height: 1024
+		height: 1024,
+		steps: 20,
+		cfg: 7
 	}
 ): Record<string, unknown> {
 	const parsed: Record<string, unknown> = JSON.parse(workflowJson);
@@ -166,6 +168,10 @@ export function mergeWorkflow(
 			value = generationOptions.width;
 		} else if (o.value === 'HEIGHT') {
 			value = generationOptions.height;
+		} else if (o.value === 'STEPS') {
+			value = generationOptions.steps;
+		} else if (o.value === 'CFG') {
+			value = generationOptions.cfg;
 		} else {
 			// Custom overrides keep the literal value entered in the builder.
 			value = o.value;

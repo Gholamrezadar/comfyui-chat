@@ -530,6 +530,8 @@
 	onDownload={downloadMessageImage}
 	width={message.role === 'assistant' ? message.width : undefined}
 	height={message.role === 'assistant' ? message.height : undefined}
+	steps={message.role === 'assistant' ? message.steps : undefined}
+	cfg={message.role === 'assistant' ? message.cfg : undefined}
 	onReply={() => chatStore.setReplyTo(message)}
 	onEdit={startEdit}
 	onDelete={() => (showDeleteConfirm = true)}

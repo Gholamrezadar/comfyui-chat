@@ -54,7 +54,7 @@ function createChatStore() {
 	}
 
 	// Send a user message in the active conversation
-	function sendMessage(content: string, images?: string[], workflow?: Workflow, generationOptions?: { seed: number; width: number; height: number }) {
+	function sendMessage(content: string, images?: string[], workflow?: Workflow, generationOptions?: { seed: number; width: number; height: number; steps: number; cfg: number }) {
 		const hasContent = content.trim().length > 0;
 		const hasImages = images && images.length > 0;
 		// Reply context (captured before clearing)
@@ -140,7 +140,7 @@ function createChatStore() {
 		userPrompt: string,
 		workflow: Workflow,
 		images?: string[],
-		generationOptions?: { seed: number; width: number; height: number }
+		generationOptions?: { seed: number; width: number; height: number; steps: number; cfg: number }
 	) {
 		try {
 			// Resolve defaults once so the value sent to ComfyUI and the value
@@ -148,8 +148,11 @@ function createChatStore() {
 			const resolvedGenerationOptions = generationOptions ?? {
 				seed: 3,
 				width: 1024,
-				height: 1024
+				height: 1024,
+				steps: 20,
+				cfg: 7
 			};
+			comfyStore.setPreviewResolution(resolvedGenerationOptions.width, resolvedGenerationOptions.height);
 			// Validate image overrides against provided images
 			const imageError = validateImageOverrides(workflow.overrides ?? [], images ?? []);
 			if (imageError) {
@@ -190,6 +193,8 @@ function createChatStore() {
 				seed: resolvedGenerationOptions.seed,
 				width: resolvedGenerationOptions.width,
 				height: resolvedGenerationOptions.height
+				, steps: resolvedGenerationOptions.steps
+				, cfg: resolvedGenerationOptions.cfg
 			};
 
 			const updated: Conversation = {

@@ -13,6 +13,8 @@
 		randomizeEachTime = $bindable(false),
 		width = $bindable(1024),
 		height = $bindable(1024)
+		,steps = $bindable(20)
+		,cfg = $bindable(7)
 	}: {
 		open?: boolean;
 		overrides?: string[];
@@ -20,6 +22,8 @@
 		randomizeEachTime?: boolean;
 		width?: number;
 		height?: number;
+		steps?: number;
+		cfg?: number;
 	} = $props();
 	let customResolution = $state(false);
 	let selectedResolution = $state('1024x1024');
@@ -86,7 +90,7 @@
 							</Tooltip>
 							<Tooltip>
 								<TooltipTrigger>
-									<Button variant={randomizeEachTime ? 'secondary' : 'outline'} size="icon" class={randomizeEachTime ? 'cursor-pointer border-emerald-400 bg-emerald-200 text-green-900 hover:bg-emerald-300' : 'cursor-pointer'} onclick={() => (randomizeEachTime = !randomizeEachTime)} aria-label="Randomize seed each time" aria-pressed={randomizeEachTime}>
+									<Button variant={randomizeEachTime ? 'secondary' : 'outline'} size="icon" class={randomizeEachTime ? 'cursor-pointer border-primary bg-primary text-primary-foreground hover:bg-primary/90' : 'cursor-pointer'} onclick={() => (randomizeEachTime = !randomizeEachTime)} aria-label="Randomize seed each time" aria-pressed={randomizeEachTime}>
 										<Dices class="h-4 w-4" />
 									</Button>
 								</TooltipTrigger>
@@ -94,6 +98,12 @@
 							</Tooltip>
 						</div>
 					</div>
+				{/if}
+				{#if overrides.includes('STEPS')}
+					<label class="grid gap-1.5 text-sm text-foreground">Steps<Input type="number" bind:value={steps} min="1" step="1" class="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" /></label>
+				{/if}
+				{#if overrides.includes('CFG')}
+					<label class="grid gap-1.5 text-sm text-foreground">CFG<Input type="number" bind:value={cfg} min="0" step="0.1" class="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" /></label>
 				{/if}
 				{#if overrides.includes('WIDTH') && overrides.includes('HEIGHT')}
 					<div class="grid gap-1.5">
@@ -103,12 +113,12 @@
 								<Input type="number" bind:value={width} min="1" aria-label="Width" />
 								<span class="text-muted-foreground">x</span>
 								<Input type="number" bind:value={height} min="1" aria-label="Height" />
-														<div class="flex gap-1"><Tooltip><TooltipTrigger><Button variant="outline" size="icon-sm" class="cursor-pointer" onclick={saveCustomResolution} aria-label="Save custom resolution"><Save class="h-3.5 w-3.5" /></Button></TooltipTrigger><TooltipContent>Save custom resolution</TooltipContent></Tooltip><Tooltip><TooltipTrigger><Button variant="outline" size="icon-sm" class="cursor-pointer" onclick={() => (customResolution = false)} aria-label="Show resolution presets"><List class="h-3.5 w-3.5" /></Button></TooltipTrigger><TooltipContent>Show resolution presets</TooltipContent></Tooltip></div>
+																<div class="flex gap-2"><Tooltip><TooltipTrigger><Button variant="outline" size="icon" class="h-9 w-9 cursor-pointer rounded-4xl" onclick={saveCustomResolution} aria-label="Save custom resolution"><Save class="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Save custom resolution</TooltipContent></Tooltip><Tooltip><TooltipTrigger><Button variant="outline" size="icon" class="h-9 w-9 cursor-pointer rounded-4xl" onclick={() => (customResolution = false)} aria-label="Show resolution presets"><List class="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Show resolution presets</TooltipContent></Tooltip></div>
 							</div>
 						{:else}
 							<div class="flex items-center gap-2">
 								<div class="relative min-w-0 flex-1">
-									<button id="generation-resolution" type="button" class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-full border border-border bg-muted px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground" aria-haspopup="listbox" aria-expanded={showResolutionMenu} onclick={() => (showResolutionMenu = !showResolutionMenu)}>
+										<button id="generation-resolution" type="button" class="flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-4xl border border-input bg-input/30 px-3 py-1 text-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring" aria-haspopup="listbox" aria-expanded={showResolutionMenu} onclick={() => (showResolutionMenu = !showResolutionMenu)}>
 										<span>{selectedResolution}</span>
 										<ChevronDown class="h-3 w-3 shrink-0" />
 									</button>
@@ -123,7 +133,7 @@
 									{/if}
 								</div>
 								<Tooltip>
-									<TooltipTrigger><Button variant="outline" size="icon-sm" class="cursor-pointer" onclick={() => (customResolution = true)} aria-label="Enter custom resolution"><Pencil class="h-3.5 w-3.5" /></Button></TooltipTrigger>
+								<TooltipTrigger><Button variant="outline" size="icon" class="h-9 w-9 cursor-pointer rounded-4xl" onclick={() => (customResolution = true)} aria-label="Enter custom resolution"><Pencil class="h-4 w-4" /></Button></TooltipTrigger>
 									<TooltipContent>Custom resolution</TooltipContent>
 								</Tooltip>
 							</div>
