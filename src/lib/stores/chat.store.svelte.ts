@@ -54,7 +54,7 @@ function createChatStore() {
 	}
 
 	// Send a user message in the active conversation
-	function sendMessage(content: string, images?: string[], workflow?: Workflow) {
+	function sendMessage(content: string, images?: string[], workflow?: Workflow, generationOptions?: { seed: number; width: number; height: number }) {
 		const hasContent = content.trim().length > 0;
 		const hasImages = images && images.length > 0;
 		// Reply context (captured before clearing)
@@ -115,7 +115,7 @@ function createChatStore() {
 				allImages.push(...images);
 			}
 			// Real ComfyUI generation — comfyStore.isGenerating handles the loading state
-			generateWithComfyUI(afterUser, newUserMsg.id, newUserMsg.content, workflow, allImages);
+			generateWithComfyUI(afterUser, newUserMsg.id, newUserMsg.content, workflow, allImages, generationOptions);
 		} else {
 			// Fake assistant response via service callback (no workflow selected)
 			isResponding = true;
@@ -139,7 +139,8 @@ function createChatStore() {
 		replyToId: string,
 		userPrompt: string,
 		workflow: Workflow,
-		images?: string[]
+		images?: string[],
+		generationOptions?: { seed: number; width: number; height: number }
 	) {
 		try {
 			// Validate image overrides against provided images
@@ -160,7 +161,8 @@ function createChatStore() {
 				workflow.workflow,
 				workflow.overrides ?? [],
 				userPrompt,
-				uploadedNames
+				uploadedNames,
+				generationOptions
 			);
 
 			const result = await comfyStore.generate(workflow.base_url, merged);

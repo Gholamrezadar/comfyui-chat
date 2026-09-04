@@ -1,5 +1,6 @@
 import type { WorkflowOverride } from './workflow.service';
 
+export const PRESET_VALUES = ['PROMPT', 'IMAGE1', 'IMAGE2', 'IMAGE3', 'IMAGE4', 'SEED', 'WIDTH', 'HEIGHT'];
 const IMAGE_PRESETS = ['IMAGE1', 'IMAGE2', 'IMAGE3', 'IMAGE4'] as const;
 
 function base64ToBlob(base64: string, mimeType: string): Blob {
@@ -124,10 +125,17 @@ export function mergeWorkflow(
 	workflowJson: string,
 	overrides: WorkflowOverride[],
 	promptText: string,
-	uploadedImageNames?: string[]
+	uploadedImageNames?: string[],
+	generationOptions: { seed: number; width: number; height: number } = {
+		seed: 3,
+		width: 1024,
+		height: 1024
+	}
 ): Record<string, unknown> {
 	const parsed: Record<string, unknown> = JSON.parse(workflowJson);
 
+	// Uploaded images are assigned to IMAGE1, IMAGE2, IMAGE3, and IMAGE4 in
+	// the same order they appear in the chat input.
 	const imageMap = new Map<string, string>();
 	if (uploadedImageNames) {
 		uploadedImageNames.forEach((name, i) => {
@@ -137,12 +145,29 @@ export function mergeWorkflow(
 
 	for (const o of overrides) {
 		if (!o.path) continue;
-		let value: string;
+
+		// Resolve the selected built-in token into the value that should be
+		// written to the workflow. All other values are literal user input.
+		let value: string | number;
+
+		// PROMPT receives the final prompt text, including any replied text
+		// that was prepended before this function was called.
 		if (o.value === 'PROMPT') {
 			value = promptText;
+		// IMAGE1-IMAGE4 receive the filenames returned by ComfyUI after the
+		// chat images have been uploaded.
 		} else if (IMAGE_PRESETS.includes(o.value as typeof IMAGE_PRESETS[number]) && imageMap.has(o.value)) {
 			value = imageMap.get(o.value)!;
+		// Temporary defaults for the built-in generation controls. These will
+		// later be replaced with values supplied by the UI.
+		} else if (o.value === 'SEED') {
+			value = generationOptions.seed;
+		} else if (o.value === 'WIDTH') {
+			value = generationOptions.width;
+		} else if (o.value === 'HEIGHT') {
+			value = generationOptions.height;
 		} else {
+			// Custom overrides keep the literal value entered in the builder.
 			value = o.value;
 		}
 		setDeep(parsed, o.path, value);

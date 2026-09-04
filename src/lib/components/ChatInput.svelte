@@ -5,7 +5,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
-	import { ImagePlus, LoaderCircle, ArrowUp, Box, Reply, X, ChevronUp, SlidersHorizontal, Square, Eraser } from 'lucide-svelte';
+	import { ImagePlus, LoaderCircle, ArrowUp, Box, Reply, X, ChevronUp, Square, Eraser, Sliders, Pencil } from 'lucide-svelte';
+	import GenerationTuning from '$lib/components/GenerationTuning.svelte';
 	import SettingsModal from '$lib/components/Settings.svelte';
 	import * as settingsService from '$lib/services/settings.service';
 	import { tick } from 'svelte';
@@ -19,6 +20,11 @@
 	let lastReplyTargetId = $state<string | null>(null);
 	let showWorkflowDropdown = $state(false);
 	let showSettings = $state(false);
+	let showTuning = $state(false);
+	let seed = $state(3);
+	let randomizeSeedEachTime = $state(false);
+	let width = $state(1024);
+	let height = $state(1024);
 	let highlightedWorkflowIndex = $state(-1);
 
 	let selectedWorkflow = $state<Workflow | null>(null);
@@ -36,10 +42,10 @@
 	});
 
 	// Open settings and pre-select the current workflow for editing
-	function openSettingsWithWorkflow() {
-		if (selectedWorkflow) {
-			workflowStore.selectWorkflow(selectedWorkflow.id);
-		}
+	function editWorkflow(workflow: Workflow) {
+		selectedWorkflow = workflow;
+		workflowStore.selectWorkflow(workflow.id);
+		showWorkflowDropdown = false;
 		showSettings = true;
 	}
 
@@ -129,7 +135,8 @@
 		)
 			return;
 
-		chatStore.sendMessage(trimmed, hasImages ? [...pendingImages] : undefined, selectedWorkflow ?? undefined);
+		const sendSeed = randomizeSeedEachTime ? Math.floor(Math.random() * 2147483648) : seed;
+		chatStore.sendMessage(trimmed, hasImages ? [...pendingImages] : undefined, selectedWorkflow ?? undefined, { seed: sendSeed, width, height });
 		inputValue = '';
 		pendingImages = [];
 		if (textareaEl) textareaEl.style.height = 'auto';
@@ -397,24 +404,14 @@
 				</Tooltip>
 
 			<!-- Settings Button -->
-				<Tooltip>
-					<TooltipTrigger>
-						<Button
-							variant="ghost"
-							size="icon"
-							onclick={openSettingsWithWorkflow}
-							class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
-							tabindex={10}
-						>
-							<SlidersHorizontal class="h-4 w-4" />
-						</Button>
-					</TooltipTrigger>
-					{#if selectedWorkflow}
-						<TooltipContent>Edit workflow</TooltipContent>
-					{:else}
-						<TooltipContent>Workflows</TooltipContent>
-					{/if}
-				</Tooltip>
+			<Tooltip>
+				<TooltipTrigger>
+					<Button variant="ghost" size="icon" onclick={() => (showTuning = true)} class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer" tabindex={10}>
+						<Sliders class="h-4 w-4" />
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent>Generation settings</TooltipContent>
+			</Tooltip>
 
 			<!-- Workflow Selector Dropup -->
 			<div class="relative">
@@ -447,17 +444,22 @@
 								</p>
 							{:else}
 								{#each workflowStore.workflows as wf, i (wf.id)}
-									<button
-										onclick={() => {
-											selectedWorkflow = wf;
-											showWorkflowDropdown = false;
-										}}
-										class="flex w-full flex-col gap-0.5 px-4 py-2.5 text-left transition-colors cursor-pointer"
+									<div
+										role="option"
+										tabindex="0"
+										aria-selected={selectedWorkflow?.id === wf.id}
+										class="flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors cursor-pointer"
 										class:bg-accent={selectedWorkflow?.id === wf.id || highlightedWorkflowIndex === i}
+										onclick={() => { selectedWorkflow = wf; showWorkflowDropdown = false; }}
 									>
-										<span class="text-sm font-medium text-foreground">{wf.name || 'Untitled Workflow'}</span>
-										<span class="text-xs text-muted-foreground truncate">{wf.base_url || 'No URL'}</span>
-									</button>
+										<div class="min-w-0 flex-1">
+											<div class="truncate text-sm font-medium text-foreground">{wf.name || 'Untitled Workflow'}</div>
+											<div class="truncate text-xs text-muted-foreground">{wf.base_url || 'No URL'}</div>
+										</div>
+										<Button variant="ghost" size="icon-sm" class="shrink-0 cursor-pointer rounded-full text-muted-foreground hover:bg-background/70 hover:text-foreground" onclick={(event) => { event.stopPropagation(); editWorkflow(wf); }} aria-label={`Edit ${wf.name || 'workflow'}`}>
+											<Pencil class="h-4 w-4" />
+										</Button>
+									</div>
 								{/each}
 							{/if}
 						</div>
@@ -500,3 +502,11 @@
 </p>
 
 <SettingsModal bind:open={showSettings} />
+<GenerationTuning
+		bind:open={showTuning}
+		overrides={selectedWorkflow?.overrides?.map((override) => override.value) ?? []}
+	bind:seed
+	bind:randomizeEachTime={randomizeSeedEachTime}
+		bind:width
+		bind:height
+	/>

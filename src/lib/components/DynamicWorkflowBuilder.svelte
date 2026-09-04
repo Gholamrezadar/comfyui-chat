@@ -4,6 +4,7 @@
 	import { X, Plus, ChevronDown, CircleHelp } from 'lucide-svelte';
 	import InfoDialog from '$lib/components/InfoDialog.svelte';
 	import type { WorkflowOverride } from '$lib/services/workflow.service';
+	import { PRESET_VALUES } from '$lib/services/workflow-merge';
 
 	let {
 		workflowText = '',
@@ -25,7 +26,6 @@
 	let openPresetRowId = $state<number | null>(null);
 	let showHintDialog = $state(false);
 
-	const PRESET_VALUES = ['PROMPT', 'IMAGE1', 'IMAGE2', 'IMAGE3', 'IMAGE4'];
 
 	export function addRowAtOffset(offset: number) {
 		const path = pathAtOffset(workflowText, offset);
@@ -253,6 +253,7 @@
 	bullets={[
 		'Double-click a field to add it as an override.',
 		'Use PROMPT for the chat text.',
-		'Use IMAGE1\u2013IMAGE4 for uploaded images.'
+		'Use IMAGE1\u2013IMAGE4 for uploaded images.',
+		'Use SEED, WIDTH, and HEIGHT for generation defaults.'
 	]}
 />
