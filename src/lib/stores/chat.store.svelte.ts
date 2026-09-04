@@ -221,6 +221,21 @@ function createChatStore() {
 
 	
 
+	// Rename a conversation; ignores empty titles
+	function renameConversation(id: string, title: string) {
+		const trimmed = title.trim();
+		if (!trimmed) return;
+		const convo = conversations.find((c) => c.id === id);
+		if (!convo) return;
+		const updated: Conversation = {
+			...$state.snapshot(convo),
+			title: trimmed,
+			updatedAt: Date.now()
+		};
+		conversations = conversations.map((c) => (c.id === id ? updated : c));
+		chatService.saveConversation(updated);
+	}
+
 	// Delete a conversation; deselect if it was active
 	async function deleteConversation(id: string) {
 		conversations = await chatService.deleteConversation(conversations, id);
@@ -279,6 +294,7 @@ function createChatStore() {
 		newConversation,
 		selectConversation,
 		sendMessage,
+		renameConversation,
 		deleteConversation,
 		setSearchQuery,
 		saveSidebarState,

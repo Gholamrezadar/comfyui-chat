@@ -2,10 +2,13 @@
 	import { chatStore } from '$lib/stores/chat.store.svelte';
 	import MessageList from './MessageList.svelte';
 	import ChatInput from './ChatInput.svelte';
-	import { Bot } from 'lucide-svelte';
+	import RenameDialog from './RenameDialog.svelte';
+	import { Bot, Pencil } from 'lucide-svelte';
 
 	// Whether we have an active conversation with messages
 	const hasMessages = $derived((chatStore.activeConversation?.messages.length ?? 0) > 0);
+
+	let showRename = $state(false);
 </script>
 
 <!-- Chat View Layout -->
@@ -35,10 +38,18 @@
 		</div>
 	{:else}
 		<!-- Active Conversation Header -->
-		<div class="flex items-center px-6 py-3 border-b border-border">
+		<div class="group flex items-center gap-1 border-b border-border px-6 py-3">
 			<h2 class="truncate text-sm font-medium text-foreground">
 				{chatStore.activeConversation.title}
 			</h2>
+			<button
+				type="button"
+				class="shrink-0 cursor-pointer rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground md:invisible md:group-hover:visible"
+				onclick={() => (showRename = true)}
+				aria-label="Rename chat"
+			>
+				<Pencil class="h-3.5 w-3.5" />
+			</button>
 		</div>
 
 		<!-- Message List -->
@@ -52,3 +63,16 @@
 		</div>
 	{/if}
 </div>
+
+{#if chatStore.activeConversation}
+	<RenameDialog
+		bind:open={showRename}
+		title="Rename chat"
+		initialValue={chatStore.activeConversation.title}
+		saveLabel="Save"
+		onsave={(value) => {
+			const id = chatStore.activeConversation?.id;
+			if (id) chatStore.renameConversation(id, value);
+		}}
+	/>
+{/if}
