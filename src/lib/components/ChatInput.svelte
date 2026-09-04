@@ -117,7 +117,17 @@
 	function handleSend() {
 		const trimmed = inputValue.trim();
 		const hasImages = pendingImages.length > 0;
-		if ((!trimmed && !hasImages) || chatStore.isResponding || comfyStore.isGenerating) return;
+		// Replying: a text reply is allowed to be empty (it resubmits the reply,
+		// since we concat the empty new text onto the reply), an image reply must
+		// include the image. Non-reply mode keeps the "must have text or images" guard.
+		const reply = chatStore.replyToMessage;
+		const replyIsImage = !!reply?.images?.length;
+		if (
+			(!trimmed && !hasImages && (!reply || replyIsImage)) ||
+			chatStore.isResponding ||
+			comfyStore.isGenerating
+		)
+			return;
 
 		chatStore.sendMessage(trimmed, hasImages ? [...pendingImages] : undefined, selectedWorkflow ?? undefined);
 		inputValue = '';
@@ -196,8 +206,26 @@
 		}
 	}
 
+	const replyImg = $derived(chatStore.replyToMessage?.images?.[0]);
+	const replyingToImage = $derived(!!replyImg);
+	const replyingToText = $derived(
+		!!chatStore.replyToMessage && !replyingToImage
+	);
+
+	const placeholder = $derived.by(() => {
+		if (chatStore.replyToMessage) {
+			if (replyingToImage) return 'Edit image...';
+			return 'Append to the replied text (empty means resubmit)';
+		}
+		return pendingImages.length > 0 ? 'Add a caption...' : 'Enter a Prompt...';
+	});
+
 	const canSend = $derived(
-		(inputValue.trim() || pendingImages.length > 0) && !chatStore.isResponding && !comfyStore.isGenerating
+		(inputValue.trim() ||
+			pendingImages.length > 0 ||
+			replyingToText) &&
+			!chatStore.isResponding &&
+			!comfyStore.isGenerating
 	);
 
 	// Keyboard navigation for workflow dropdown
@@ -319,7 +347,7 @@
 				oninput={autoResize}
 				onkeydown={handleKeydown}
 				onpaste={handlePaste}
-				placeholder={pendingImages.length > 0 ? 'Add a caption...' : 'Enter a Prompt...'}
+				placeholder={placeholder}
 				rows={1}
 				disabled={chatStore.isResponding}
 				class="min-h-8 max-h-44 flex-1 resize-none border-0 bg-transparent px-2 py-1 text-sm shadow-none focus-visible:ring-0 sm:w-full sm:flex-none"

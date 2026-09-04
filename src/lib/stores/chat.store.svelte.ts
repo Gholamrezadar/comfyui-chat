@@ -57,7 +57,15 @@ function createChatStore() {
 	function sendMessage(content: string, images?: string[], workflow?: Workflow) {
 		const hasContent = content.trim().length > 0;
 		const hasImages = images && images.length > 0;
-		if ((!hasContent && !hasImages) || isResponding || comfyStore.isGenerating) return;
+		// Reply context (captured before clearing)
+		const replyHasText = !!replyToMessage?.content?.trim();
+		const replyHasImage = !!replyToMessage?.images?.length;
+		const replyingToText = !!replyToMessage && replyHasText && !replyHasImage;
+		// Allow an empty text input when replying to text (resubmit). Refuse the
+		// truly empty send in any other case, including an image reply without an
+		// uploaded replacement image.
+		if (isResponding || comfyStore.isGenerating) return;
+		if (!hasContent && !hasImages && !replyingToText) return;
 
 		// Auto-create a conversation if none is active
 		let convo = activeConversation;
@@ -74,10 +82,19 @@ function createChatStore() {
 		const replyImages = replyToMessage?.images;
 		replyToMessage = null;
 
+		// Text replies: append the new prompt to the replied text so the workflow
+		// receives a single PROMPT. An empty new text simply resubmits the reply.
+		// Image replies stay unchanged: the reply's first image is sent as IMAGE1.
+		let storedContent = content;
+		if (replyingToText) {
+			const trimmed = content.trim();
+			storedContent = trimmed.length > 0 ? `${replyContent}\n${trimmed}` : replyContent;
+		}
+
 		// Add the user message (snapshot the proxied conversation before mutating it)
 		const afterUser = chatService.addUserMessage(
 			$state.snapshot(convo),
-			content,
+			storedContent,
 			replyId,
 			replyContent,
 			images
