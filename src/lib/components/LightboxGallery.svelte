@@ -20,8 +20,18 @@
 
 	let viewportEl: HTMLDivElement | undefined = $state();
 
-	function goToLightbox(target: number) {
+	// Programmatic navigation (chevrons, dots, keyboard) swaps instantly so
+	// near-identical images can be compared without a sliding animation.
+	// Only a drag release animates (animate = true), gliding from the
+	// finger's release point into the next/prev image.
+	function goToLightbox(target: number, animate = false) {
 		if (!images.length) return;
+		if (!animate) {
+			skipLightboxTransition = true;
+			requestAnimationFrame(() => {
+				skipLightboxTransition = false;
+			});
+		}
 		index = Math.min(Math.max(target, 0), images.length - 1);
 		dragX = 0;
 	}
@@ -61,6 +71,7 @@
 
 	let dragX = $state(0);
 	let isDraggingLightbox = $state(false);
+	let skipLightboxTransition = $state(false);
 	let activeLightboxPointerId: number | null = null;
 	let swipeStartX = 0;
 	let swipeStartY = 0;
@@ -120,7 +131,7 @@
 			Math.abs(dx) >= getSwipeThreshold() &&
 			Math.abs(dx) > Math.abs(dy)
 		) {
-			navigateLightbox(dx < 0 ? 1 : -1);
+			goToLightbox(index + (dx < 0 ? 1 : -1), true);
 		} else {
 			dragX = 0;
 		}
@@ -242,7 +253,8 @@
 				<!-- Sliding track: adjacent images stay mounted so the next/prev image slides in -->
 				<div
 					class="flex w-full will-change-transform"
-					style="transform: translateX(calc({-index * 100}% + {dragX}px)); transition: {isDraggingLightbox
+					style="transform: translateX(calc({-index * 100}% + {dragX}px)); transition: {isDraggingLightbox ||
+					skipLightboxTransition
 						? 'none'
 						: 'transform 0.3s ease-out'};"
 				>
