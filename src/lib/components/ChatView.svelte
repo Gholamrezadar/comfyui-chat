@@ -3,7 +3,9 @@
 	import MessageList from './MessageList.svelte';
 	import ChatInput from './ChatInput.svelte';
 	import RenameDialog from './RenameDialog.svelte';
-	import { Bot, Pencil } from 'lucide-svelte';
+	import { Bot, Pencil, PanelLeft } from 'lucide-svelte';
+
+	let { sidebarCollapsed = $bindable(false) }: { sidebarCollapsed: boolean } = $props();
 
 	// Whether we have an active conversation with messages
 	const hasMessages = $derived((chatStore.activeConversation?.messages.length ?? 0) > 0);
@@ -12,8 +14,22 @@
 </script>
 
 <!-- Chat View Layout -->
-<div class="flex h-full flex-col">
+<div class="relative flex h-full flex-col">
 	{#if !chatStore.activeConversation || !hasMessages}
+		{#if sidebarCollapsed}
+			<!-- Mobile drawer opener (rail is off-canvas on small screens) -->
+			<button
+				type="button"
+				class="absolute top-3 left-3 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground md:hidden"
+				onclick={() => {
+					sidebarCollapsed = false;
+					chatStore.saveSidebarState(true);
+				}}
+				aria-label="Open sidebar"
+			>
+				<PanelLeft class="h-4 w-4" />
+			</button>
+		{/if}
 		<!-- Welcome Empty State -->
 		<div class="flex flex-1 flex-col items-center justify-center gap-8 px-4">
 			<!-- Welcome Hero -->
@@ -38,7 +54,21 @@
 		</div>
 	{:else}
 		<!-- Active Conversation Header -->
-		<div class="group flex items-center gap-1 border-b border-border px-6 py-3">
+		<div class="group flex items-center gap-1 border-b border-border px-4 py-3 md:px-6">
+			{#if sidebarCollapsed}
+				<!-- Mobile drawer opener (rail is off-canvas on small screens) -->
+				<button
+					type="button"
+					class="mr-0.5 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground md:hidden"
+					onclick={() => {
+						sidebarCollapsed = false;
+						chatStore.saveSidebarState(true);
+					}}
+					aria-label="Open sidebar"
+				>
+					<PanelLeft class="h-4 w-4" />
+				</button>
+			{/if}
 			<h2 class="truncate text-sm font-medium text-foreground">
 				{chatStore.activeConversation.title}
 			</h2>

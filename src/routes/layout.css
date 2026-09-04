@@ -188,3 +188,45 @@
 		mask-size: 350vmax;
 	}
 }
+
+/* Sidebar toggle: content fades/slides in while the width animates */
+@keyframes sidebar-content-in {
+	from {
+		opacity: 0;
+		transform: translateX(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+.sidebar-content-in {
+	animation: sidebar-content-in 0.25s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sidebar-content-in {
+		animation: none;
+	}
+}
+
+/* Mobile sidebar backdrop fade */
+@keyframes sidebar-backdrop-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+.sidebar-backdrop-in {
+	animation: sidebar-backdrop-in 0.25s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sidebar-backdrop-in {
+		animation: none;
+	}
+}

@@ -133,10 +133,23 @@
 
 <!-- Sidebar Container -->
 <svelte:window onkeydown={handleKeydown} />
+{#if !collapsed}
+	<!-- Mobile-only backdrop: the drawer slides over content, never squeezes it -->
+	<button
+		type="button"
+		tabindex={-1}
+		aria-label="Close sidebar"
+		class="sidebar-backdrop-in fixed inset-0 z-40 cursor-default bg-background/60 backdrop-blur-sm md:hidden"
+		onclick={() => {
+			collapsed = true;
+			chatStore.saveSidebarState(false);
+		}}
+	></button>
+{/if}
 <aside
-	class="relative top-0 left-0 z-50 flex h-full flex-col border-r border-border bg-sidebar transition-all duration-0 ease-in-out md:relative md:h-full"
-	class:w-full={!collapsed}
-	class:w-14={collapsed}
+	class="top-0 left-0 z-50 flex h-full w-72 max-w-[85vw] shrink-0 flex-col overflow-hidden border-r border-border bg-sidebar transition-[width,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] max-md:fixed max-md:inset-y-0 max-md:shadow-2xl md:relative"
+	class:max-md:-translate-x-full={collapsed}
+	class:max-md:translate-x-0={!collapsed}
 	class:md:w-64={!collapsed}
 	class:md:w-14={collapsed}
 >
@@ -171,14 +184,14 @@
 	<div class="flex items-center gap-2 px-3 py-3" class:justify-center={collapsed}>
 		{#if !collapsed}
 			<!-- Expanded Brand -->
-			<div class="flex min-w-0 flex-1 items-center gap-2">
+			<div class="sidebar-content-in flex min-w-0 flex-1 items-center gap-2">
 				<span class="flex h-7 items-center justify-center truncate text-sm font-semibold text-foreground">
 					ComfyUI Chat
 				</span>
 			</div>
 		{:else}
 			<!-- Collapsed Brand Spacer -->
-			<div class="invisible flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
+			<div class="sidebar-content-in invisible flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
 				<Bot class="h-4 w-4 text-primary-foreground" />
 			</div>
 		{/if}
@@ -188,6 +201,7 @@
 	<div class="flex flex-col gap-1 px-2" class:items-center={collapsed}>
 		{#if collapsed}
 			<!-- Collapsed Actions -->
+			<div class="sidebar-content-in flex flex-col items-center gap-1">
 			<Tooltip>
 				<TooltipTrigger>
 					<Button
@@ -221,12 +235,13 @@
 			</TooltipTrigger>
 			<TooltipContent side="right">Search <span class="text-muted-foreground">{formatShortcut(shortcuts[1])}</span> </TooltipContent>
 		</Tooltip>
+		</div>
 
 		{:else}
 			<!-- Expanded Actions -->
 			<Button
 				variant="ghost"
-				class="h-9 w-full justify-start gap-2 text-sm cursor-pointer"
+				class="sidebar-content-in h-9 w-full justify-start gap-2 text-sm cursor-pointer"
 				onclick={handleNewConversation}
 				tabindex={2}
 			>
@@ -235,7 +250,7 @@
 			</Button>
 
 			<!-- Search Input -->
-			<div class="mt-1">
+			<div class="sidebar-content-in mt-1">
 				<Input
 					bind:ref={searchInputEl}
 					bind:value={searchInput}
@@ -249,7 +264,7 @@
 
 	<!-- Recent Conversations -->
 	{#if !collapsed}
-		<div class="mt-4 min-h-0 flex-1">
+		<div class="sidebar-content-in mt-4 min-h-0 flex-1">
 			<!-- Recent Header -->
 			<p class="px-4 pb-1 text-xs font-light tracking-wider text-muted-foreground">
 				Recents
@@ -315,7 +330,7 @@
 		</div>
 	{:else}
 		<!-- Collapsed Sidebar Spacer -->
-		<div class="flex-1"></div>
+		<div class="sidebar-content-in flex-1"></div>
 	{/if}
 
 	<!-- Sidebar Footer -->
@@ -326,6 +341,7 @@
 	>
 		{#if collapsed}
 			<!-- Collapsed Theme Toggle (mobile only) -->
+			<div class="sidebar-content-in flex flex-col items-center gap-2">
 			<Tooltip>
 				<TooltipTrigger>
 					<Button
@@ -359,9 +375,10 @@
 					<span class="text-muted-foreground">{formatShortcut(shortcuts[3])}</span>
 			</TooltipContent>
 			</Tooltip>
+			</div>
 		{:else}
 			<!-- Expanded: Theme Toggle (mobile only) + Settings -->
-			<div class="flex items-center justify-between px-2 py-1.5">
+			<div class="sidebar-content-in flex items-center justify-between px-2 py-1.5">
 				<Button
 					variant="ghost"
 					size="icon"

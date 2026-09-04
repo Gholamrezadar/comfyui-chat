@@ -31,7 +31,7 @@
 
 		<!-- Main Chat Area -->
 		<main class="flex flex-1 min-w-0 flex-col overflow-hidden">
-			<ChatView />
+			<ChatView bind:sidebarCollapsed />
 		</main>
 
 		<!-- Theme Toggle: top right of screen (desktop only) -->
