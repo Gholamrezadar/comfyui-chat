@@ -13,12 +13,18 @@
 		ChevronDown,
 		CircleHelp,
 		Maximize2,
-		Minimize2
+		Minimize2,
+		SlidersHorizontal,
+		Info,
+		MonitorCog,
+
 	} from 'lucide-svelte';
 	import type { WorkflowOverride } from '$lib/services/workflow.service';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import InfoDialog from '$lib/components/InfoDialog.svelte';
 	import DynamicWorkflowBuilder from '$lib/components/DynamicWorkflowBuilder.svelte';
+	import SystemSettings from '$lib/components/settings/SystemSettings.svelte';
+	import AboutSettings from '$lib/components/settings/AboutSettings.svelte';
 	import { toast } from 'svelte-sonner';
 	import { Tooltip, TooltipContent, TooltipTrigger } from '$lib/components/ui/tooltip';
 
@@ -38,6 +44,13 @@
 	let showBaseUrlHelp = $state(false);
 	let showWorkflowHelp = $state(false);
 	let workflowExpanded = $state(false);
+	let activeTab = $state<'workflows' | 'system' | 'about'>('workflows');
+
+	const settingsTabs = [
+		{ id: 'workflows' as const, label: 'Workflows', description: 'Connections and prompts', icon: SlidersHorizontal },
+		{ id: 'system' as const, label: 'System', description: 'App preferences', icon: MonitorCog },
+		{ id: 'about' as const, label: 'About', description: 'Version and links', icon: Info }
+	];
 
 	// When a workflow is selected, load it into the editor fields
 	$effect(() => {
@@ -267,7 +280,7 @@
 		class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-0 backdrop-blur-sm md:p-4"
 	>
 		<div
-			class="flex h-full w-full flex-row overflow-hidden bg-card md:h-[70vh] md:max-w-3xl md:rounded-2xl md:border md:border-border md:shadow-lg"
+			class="flex h-full w-full flex-col overflow-hidden bg-card md:flex-row md:h-[70vh] md:max-w-3xl md:rounded-2xl md:border md:border-border md:shadow-lg"
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={handleDialogKeydown}
 			role="dialog"
@@ -276,54 +289,46 @@
 			tabindex="-1"
 			id="settings-dialog"
 		>
-			<!-- Sidebar: Workflow List (desktop only; mobile uses the combobox below) -->
-			<div class="hidden w-48 flex-col border-r border-border md:flex md:rounded-l-2xl">
-				<!-- Sidebar Header -->
-				<div class="flex h-12 shrink-0 items-center justify-between border-b border-border px-4 py-0">
-					<h3 class="text-sm font-semibold text-foreground">Workflows</h3>
-					<Button
-						variant="ghost"
-						size="icon"
-						class="h-7 w-7 cursor-pointer"
-						onclick={handleNew}
-						aria-label="Add workflow"
-						tabindex={-1}
-					>
-						<Plus class="h-4 w-4" />
-					</Button>
-				</div>
+			<!-- Settings navigation: a sidebar on desktop, horizontal tabs on mobile -->
+			<nav class="relative shrink-0 border-b border-border bg-muted/20 md:w-52 md:border-r md:border-b-0 md:rounded-l-2xl md:bg-transparent" aria-label="Settings sections">
+				<button
+					type="button"
+					class="absolute top-1/2 right-3 z-10 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground md:hidden"
+					onclick={() => (open = false)}
+					aria-label="Close settings"
+				>
+					<X class="h-4 w-4" />
+				</button>
+				<div class="hidden px-5 pt-5 md:block">
+					<p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Settings</p>
 
-				<!-- Workflow List: min-h-0 allows flex child to shrink, enabling ScrollArea to scroll -->
-				<div class="min-h-0 flex-1">
-					<ScrollArea class="h-full">
-						{#if workflowStore.workflows.length === 0}
-							<p class="px-4 py-4 text-center text-xs text-muted-foreground">No workflows yet</p>
-						{:else}
-							<div class="flex flex-col gap-0.5 p-2">
-								{#each workflowStore.workflows as wf (wf.id)}
-									<button
-										onclick={() => handleSelect(wf.id)}
-										class="w-full cursor-pointer rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
-										class:bg-accent={workflowStore.activeId === wf.id}
-										tabindex={-1}
-									>
-										<p class="truncate font-medium">
-											{wf.name || 'Untitled Workflow'}
-										</p>
-									</button>
-								{/each}
-							</div>
-						{/if}
-					</ScrollArea>
 				</div>
-			</div>
+				<div class="flex gap-1 overflow-x-auto p-3 pr-12 md:flex-col md:gap-1 md:p-3 md:pt-6 md:pr-3">
+					{#each settingsTabs as tab (tab.id)}
+						{@const Icon = tab.icon}
+						<button
+							type="button"
+							onclick={() => (activeTab = tab.id)}
+							class="flex shrink-0 cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-accent md:w-full"
+							class:bg-accent={activeTab === tab.id}
+							class:text-foreground={activeTab === tab.id}
+							aria-current={activeTab === tab.id ? 'page' : undefined}
+						>
+							<Icon class="h-4 w-4 shrink-0" />
+							<span class="whitespace-nowrap text-sm font-medium">{tab.label}</span>
+						</button>
+					{/each}
+				</div>
+			</nav>
 
 			<!-- Main Panel -->
 			<div class="flex flex-1 flex-col md:rounded-r-2xl">
-				<!-- Action Bar: always visible -->
-				<div class="flex h-12 shrink-0 items-center gap-2 border-b border-border px-4 py-0">
-					<!-- Mobile workflow selector, flushed left (sidebar is hidden on small screens) -->
-					<div class="relative min-w-0 flex-1 md:hidden">
+				{#if activeTab === 'workflows'}
+				<!-- Action Bar: workflow controls -->
+				<div class="flex h-16 shrink-0 items-center gap-2 border-b-0 border-border px-4 py-0 md:h-14 md:border-b">
+					<!-- Workflow selector uses the same compact menu on desktop and mobile -->
+					{#if activeTab === 'workflows'}
+					<div class="relative my-2 min-w-0 flex-1">
 						<button
 							type="button"
 							class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-border bg-muted px-3 py-1.5 text-sm text-foreground transition-colors hover:text-foreground"
@@ -387,8 +392,9 @@
 							</div>
 						{/if}
 					</div>
+					{/if}
 					<div class="ml-auto flex shrink-0 items-center gap-2">
-					{#if workflowStore.activeWorkflow}
+					{#if activeTab === 'workflows' && workflowStore.activeWorkflow}
 						<Button
 							variant="default"
 							size="sm"
@@ -401,7 +407,7 @@
 							<span class="hidden sm:inline">Save</span>
 						</Button>
 					{/if}
-					{#if workflowStore.activeWorkflow}
+					{#if activeTab === 'workflows' && workflowStore.activeWorkflow}
 						<Tooltip>
 							<TooltipTrigger>
 								<Button
@@ -418,7 +424,7 @@
 							<TooltipContent>Duplicate workflow</TooltipContent>
 						</Tooltip>
 					{/if}
-					{#if workflowStore.activeWorkflow && !isNewWorkflow}
+					{#if activeTab === 'workflows' && workflowStore.activeWorkflow && !isNewWorkflow}
 						<Tooltip>
 							<TooltipTrigger>
 								<Button
@@ -438,7 +444,7 @@
 					<Button
 						variant="ghost"
 						size="icon"
-						class="h-7 w-7 cursor-pointer"
+						class="hidden h-7 w-7 cursor-pointer md:flex"
 						onclick={() => (open = false)}
 						aria-label="Close"
 						tabindex={-1}
@@ -447,11 +453,12 @@
 					</Button>
 					</div>
 				</div>
-
-				{#if workflowStore.activeWorkflow}
+				{/if}
+					
+				{#if activeTab === 'workflows' && workflowStore.activeWorkflow}
 					<div class="min-h-0 flex-1">
 						<ScrollArea class="h-full">
-							<div class="flex flex-col gap-4 p-4">
+							<div class="flex flex-col gap-4 pt-2 pr-4 pl-4 pb-4">
 								<div class="flex flex-col gap-1.5">
 									<label for="wf-name" class="text-sm font-medium text-foreground">Name</label>
 									<Input
@@ -531,17 +538,20 @@
 							</div>
 						</ScrollArea>
 					</div>
-				{:else}
-					<!-- Empty State -->
-					<div class="flex flex-1 items-center justify-center p-6">
-						<p class="text-sm text-muted-foreground">Select a workflow or create a new one</p>
+				{:else if activeTab === 'workflows'}
+					<div class="flex flex-1 items-center justify-center p-6 text-center">
+						<div><p class="text-sm text-muted-foreground">Select a workflow or create a new one</p><Button variant="outline" size="sm" class="mt-4 cursor-pointer" onclick={handleNew}><Plus class="mr-2 h-4 w-4" />New workflow</Button></div>
 					</div>
+				{:else if activeTab === 'system'}
+					<SystemSettings />
+				{:else}
+					<AboutSettings />
 				{/if}
 			</div>
 		</div>
 	</div>
 	{#if workflowExpanded}
-		<div class="fixed inset-0 z-[60] flex flex-col gap-2 bg-card p-4">
+		<div class="fixed inset-0 z-60 flex flex-col gap-2 bg-card p-4">
 			<div class="flex shrink-0 items-center justify-between">
 				<span class="text-sm font-medium text-foreground">Workflow</span>
 				<button
