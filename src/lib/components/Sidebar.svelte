@@ -402,8 +402,11 @@
 			</Tooltip>
 			</div>
 		{:else}
-			<!-- Expanded: Theme Toggle above Settings -->
-			<div class="sidebar-content-in flex flex-col items-start gap-2 px-2 py-1.5">
+			<!-- Expanded: Settings left, Theme Toggle right -->
+			<div class="sidebar-content-in flex flex-row items-center justify-between gap-2 px-2 py-1.5">
+				<Button variant="ghost" size="icon" class="h-9 w-9 shrink-0 cursor-pointer" aria-label="Settings" onclick={() => (showSettings = true)} tabindex={5}>
+					<Settings class="h-4 w-4" />
+				</Button>
 				<Button
 					variant="ghost"
 					size="icon"
@@ -416,9 +419,6 @@
 					{:else}
 						<Moon class="h-4 w-4" />
 					{/if}
-				</Button>
-				<Button variant="ghost" size="icon" class="h-9 w-9 shrink-0 cursor-pointer" aria-label="Settings" onclick={() => (showSettings = true)} tabindex={5}>
-					<Settings class="h-4 w-4" />
 				</Button>
 			</div>
 		{/if}
