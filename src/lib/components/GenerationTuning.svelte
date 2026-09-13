@@ -75,6 +75,9 @@
 				</Button>
 			</div>
 			<div class="grid gap-4">
+				{#if overrides.length === 0}
+					<p class="text-center text-sm text-muted-foreground py-4">Try adding overrides for seed, resolution, steps, or CFG to see them here.</p>
+				{/if}
 				{#if overrides.includes('SEED')}
 					<div class="grid gap-1.5">
 						<label for="generation-seed" class="text-sm text-foreground">Seed</label>
