@@ -223,10 +223,10 @@
 	</div>
 
 	<!-- Sidebar Action Buttons -->
-	<div class="flex flex-col gap-1 px-2" class:items-center={collapsed}>
+	<div class="flex flex-col gap-1 px-2">
 		{#if collapsed}
 			<!-- Collapsed Actions -->
-			<div class="sidebar-content-in flex flex-col items-center gap-1">
+			<div class="sidebar-content-in ml-auto flex flex-col items-end gap-1">
 			<Tooltip>
 				<TooltipTrigger>
 					<Button
@@ -361,12 +361,11 @@
 	<!-- Sidebar Footer -->
 	<div
 		class="z-20 flex flex-col gap-2 border-none border-border bg-sidebar p-2"
-		class:items-center={collapsed}
 		class:border-none={collapsed}
 	>
 		{#if collapsed}
 			<!-- Collapsed Theme Toggle (mobile only) -->
-			<div class="sidebar-content-in flex flex-col items-center gap-2">
+			<div class="sidebar-content-in ml-auto flex flex-col items-end gap-2">
 			<Tooltip>
 				<TooltipTrigger>
 					<Button
