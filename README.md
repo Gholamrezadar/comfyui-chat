@@ -11,6 +11,7 @@ A ChatGPT inspired WebUI for ComfyUI
 - Multiple conversations stored locally in the browser
 - Fullscreen image viewer with captions and keyboard navigation
 - Light and dark themes
+- Mock mode for testing without a running ComfyUI server (enter `http://mock.test` as the server URL)
 
 ## Demo
 
@@ -49,13 +50,8 @@ bun run build
 bun run preview
 ```
 
-## Credits
-
-- Gholamreza Dar 2026
-- MiMo 2.5
-- ChatGPT 5.6 Luna
-
 ## AI Usage
 
-- Mainly AI for implementation and backend design
-- Human for UI/UX design and decision making
+- AI did 99%+ of the implementation
+- MiMo 2.5
+- ChatGPT 5.6 Luna

@@ -1,4 +1,5 @@
 import { ComfyUIClient, type OutputImage } from '$lib/services/comfyui-client';
+import { MockComfyUIClient } from '$lib/services/mock-comfy-client';
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -8,7 +9,7 @@ export interface GenerateResult {
 }
 
 function createComfyStore() {
-	let client: ComfyUIClient | null = null;
+	let client: ComfyUIClient | MockComfyUIClient | null = null;
 
 	let connectionStatus = $state<ConnectionStatus>('disconnected');
 	let isGenerating = $state(false);
@@ -37,7 +38,10 @@ function createComfyStore() {
 
 		connectionStatus = 'connecting';
 		error = null;
-		client = new ComfyUIClient(url);
+
+		// Use mock client when the URL is "http://mock.test"
+		const isMock = url.replace(/\/+$/, '') === 'http://mock.test';
+		client = isMock ? new MockComfyUIClient(url) : new ComfyUIClient(url);
 
 		client.on('connected', () => {
 			connectionStatus = 'connected';
@@ -289,7 +293,7 @@ function createComfyStore() {
 		get currentNode(): string | null {
 			return currentNode;
 		},
-		get client(): ComfyUIClient | null {
+		get client(): ComfyUIClient | MockComfyUIClient | null {
 			return client;
 		},
 
