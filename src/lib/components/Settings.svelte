@@ -299,11 +299,11 @@
 				>
 					<X class="h-4 w-4" />
 				</button>
-				<div class="hidden px-5 pt-5 md:block">
-					<p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Settings</p>
+				<!-- <div class="hidden px-5 pt-5 md:block"> -->
+					<!-- <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground"></p> -->
 
-				</div>
-				<div class="flex gap-1 overflow-x-auto p-3 pr-12 md:flex-col md:gap-1 md:p-3 md:pt-6 md:pr-3">
+				<!-- </div> -->
+				<div class="flex gap-1 overflow-x-auto p-3 pr-12 md:flex-col md:gap-1 md:p-3 md:pt-2 md:pr-3">
 					{#each settingsTabs as tab (tab.id)}
 						{@const Icon = tab.icon}
 						<button
@@ -453,7 +453,23 @@
 					</Button>
 					</div>
 				</div>
-				{/if}
+			{:else}
+				<!-- Action Bar: system / about tabs -->
+				<div class="flex h-16 shrink-0 items-center gap-2 border-b border-transparent px-4 py-0 md:h-14">
+					<div class="ml-auto flex shrink-0 items-center gap-2">
+						<Button
+							variant="ghost"
+							size="icon"
+							class="hidden h-7 w-7 cursor-pointer md:flex"
+							onclick={() => (open = false)}
+							aria-label="Close"
+							tabindex={-1}
+						>
+							<X class="h-4 w-4" />
+						</Button>
+					</div>
+				</div>
+			{/if}
 					
 				{#if activeTab === 'workflows' && workflowStore.activeWorkflow}
 					<div class="min-h-0 flex-1">
