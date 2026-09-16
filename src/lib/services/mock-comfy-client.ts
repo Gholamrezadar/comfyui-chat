@@ -29,6 +29,15 @@ function pickRandomPalette(): Palette {
 	return PALETTES[Math.floor(Math.random() * PALETTES.length)];
 }
 
+function blobToDataUrl(blob: Blob): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onloadend = () => resolve(reader.result as string);
+		reader.onerror = reject;
+		reader.readAsDataURL(blob);
+	});
+}
+
 // ── Mock image generation using Canvas API ────────────────────────────────
 
 function generatePreviewImage(progress = 0, palette: Palette = PALETTES[0]): Promise<Blob> {
@@ -295,7 +304,7 @@ export class MockComfyUIClient {
 
 		// Pre-generate final image only; previews are generated progressively
 		const finalBlob = await generateFinalImage(palette);
-		this._mockOutputUrl = URL.createObjectURL(finalBlob);
+		this._mockOutputUrl = await blobToDataUrl(finalBlob);
 
 		// 1. execution_start
 		this._emit('start', promptId);
